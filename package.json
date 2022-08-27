@@ -1,0 +1,12 @@
+{
+  "name": "comcord",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "keywords": [],
+  "author": "Cynosphere",
+  "license": "MIT",
+  "dependencies": {
+    "eris": "github:abalabahaha/eris#dev"
+  }
+}
