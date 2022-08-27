@@ -7,6 +7,7 @@
   "author": "Cynosphere",
   "license": "MIT",
   "dependencies": {
+    "chalk": "^5.0.1",
     "eris": "github:abalabahaha/eris#dev"
   }
 }
