@@ -1,9 +1,19 @@
 const Eris = require("eris");
+const chalk = require("chalk");
+const {inspect} = require("util");
+
 const token = process.argv[2];
+const stdin = process.stdin;
+const stdout = process.stdout;
+
+stdin.setRawMode(true);
+stdin.resume();
+stdin.setEncoding("utf8");
 
 let currentGuild,
   currentChannel,
-  inSendMode = false;
+  inSendMode = false,
+  nameLength = 2;
 
 const messageQueue = [];
 
@@ -15,15 +25,131 @@ const client = new Eris("Bot " + token, {
 
 client.once("ready", function () {
   console.log(
-    `Logged in as: ${client.user.username}#${client.user.discriminator} (${client.user.id})`
+    "Logged in as: " +
+      chalk.yellow(
+        `${client.user.username}#${client.user.discriminator} (${client.user.id})`
+      )
   );
+  nameLength = client.user.username.length + 2;
 });
+
+function processMessage({name, content, bot}) {
+  if (name.length + 2 > nameLength) nameLength = name.length + 2;
+
+  if (
+    (content.startsWith("*") && content.endsWith("*")) ||
+    (content.startsWith("_") && content.endsWith("_"))
+  ) {
+    console.log(chalk.bold.green(`<${name} ${content}>`));
+  } else {
+    // TODO: markdown
+    console.log(
+      chalk.bold.cyan(`[${name}]` + " ".rep(nameLength - (name.length + 2))) +
+        chalk.reset(" " + content)
+    );
+  }
+}
+
+function processQueue() {
+  for (const msg of messageQueue) {
+    if (msg.content.indexOf("\n") > -1) {
+      const lines = msg.content.split("\n");
+      for (const line of lines) {
+        processMessage({
+          name: msg.author.name,
+          bot: msg.author.bot,
+          content: line,
+        });
+      }
+    } else {
+      processMessage({
+        name: msg.author.name,
+        bot: msg.author.bot,
+        content: msg.content,
+      });
+    }
+  }
+}
 
 client.on("messageCreate", function (msg) {
   if (msg.channel.id == currentChannel) {
     if (inSendMode) {
       messageQueue.push(msg);
     } else {
+      if (msg.content.indexOf("\n") > -1) {
+        const lines = msg.content.split("\n");
+        for (const line of lines) {
+          processMessage({
+            name: msg.author.name,
+            bot: msg.author.bot,
+            content: line,
+          });
+        }
+      } else {
+        processMessage({
+          name: msg.author.name,
+          bot: msg.author.bot,
+          content: msg.content,
+        });
+      }
+    }
+  }
+});
+
+let toSend = "";
+function setupSendMode() {
+  inSendMode = true;
+  toSend = "";
+  const name = `[${client.user.username}]`;
+  stdout.write(
+    chalk.bold.cyan(name) + " ".rep(nameLength - name.length) + chalk.reset(" ")
+  );
+}
+function sendMessage() {
+  toSend = toSend.trim();
+  if (toSend === "") {
+    stdout.write("<no message sent>\n");
+  } else {
+    client.createMessage(currentChannel, toSend);
+  }
+  inSendMode = false;
+  processQueue();
+}
+
+stdin.on("data", function (key) {
+  if (inSendMode) {
+    if (key === "\r") {
+      sendMessage();
+    } else {
+      if (key === "\b") {
+        if (toSend.length > 0) {
+          stdout.moveCursor(-1);
+          stdout.write(" ");
+          stdout.moveCursor(-1);
+          toSend = toSend.substring(0, toSend.length - 1);
+        }
+      } else {
+        stdout.write(key);
+        toSend += key;
+      }
+    }
+  } else {
+    switch (key) {
+      case "\u0003":
+      case "q":
+        client.disconnect(false);
+        process.exit(0);
+        break;
+      case " ":
+      case "\r":
+      default: {
+        if (currentChannel == null) {
+          console.log("not in a channel");
+          break;
+        }
+        setupSendMode();
+        break;
+      }
     }
   }
 });

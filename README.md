@@ -21,8 +21,8 @@ You **MUST** grant your bot all Privileged Gateway Intents.
 * "Jank" by design. While I don't expect anyone to actually use comcord on serial terminals or teletypes other than for meme factor, the option is still there.
 
 ## TODO
-- [ ] Commands
-  - [ ] Quit (q)
+- [x] Commands
+  - [x] Quit (q)
   - [ ] Switch guilds (G)
   - [ ] Switch channels (g)
   - [ ] List online users in guild (w)
@@ -33,20 +33,21 @@ You **MUST** grant your bot all Privileged Gateway Intents.
     - [ ] Creation date, join date, ID, etc
   - [ ] Room history (r)
   - [ ] Extended room history (R)
-- [ ] Message Receiving
+- [x] Message Receiving
   - [ ] Markdown styling
     - [ ] Common markdown (bold, italic, etc)
     - [ ] Figure out how spoilers would work
     - [ ] Emotes?????
     - [ ] Timestamp parsing
   - [ ] Embeds in the style of commode's posted links
-  - [ ] Messages wrapped in `*`'s or `_`'s parsed as emotes
+  - [x] Messages wrapped in `*`'s or `_`'s parsed as emotes
   - [ ] Inline DMs to replicate commode's private messages
   - [ ] Replies
-- [ ] Message sending
-  - [ ] Puts incoming messages into queue whilst in send mode
+- [x] Message sending
+  - [x] Puts incoming messages into queue whilst in send mode
   - [ ] Mentions
   - [ ] Replies
 - [ ] Configuration
   - [ ] Default guild/channel
 - [ ] Threads
+- [ ] Not have the token just be in argv
