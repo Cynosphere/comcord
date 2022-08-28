@@ -313,6 +313,42 @@ function listGuilds() {
   console.log("");
 }
 
+function listChannels() {
+  let longest = 0;
+  let longestTopic = 0;
+  const guild = client.guilds.get(currentGuild);
+  const channels = [...guild.channels.values()].filter((c) => c.type == 0);
+  channels.sort((a, b) => a.position - b.position);
+
+  for (const channel of channels) {
+    if (channel.name.length > longest) longest = channel.name.length;
+    if (channel.topic != null && channel.topic.length > longestTopic)
+      longestTopic = channel.topic.length;
+  }
+
+  console.log("");
+  console.log(
+    "  " +
+      "channel-name".padStart(longest, " ") +
+      "  " +
+      "topic".padStart(Math.min(80 - (longest + 5), longestTopic), " ")
+  );
+  console.log("-".repeat(80));
+  for (const channel of channels) {
+    const topic =
+      channel.topic != null ? channel.topic.replace(/\n/g, " ") : "";
+    console.log(
+      "  " +
+        channel.name.padStart(longest, " ") +
+        "  " +
+        (topic.length > 80 - longest + 9
+          ? topic.substring(0, 79 - (longest + 5)) + "\u2026"
+          : topic.padStart(Math.min(80 - (longest + 5), longestTopic), " "))
+    );
+  }
+  console.log("");
+}
+
 let targetGuild = "";
 function gotoGuild() {
   targetGuild = "";
@@ -398,6 +434,7 @@ function listUsers() {
 function switchGuild() {
   targetGuild = targetGuild.trim();
   if (targetGuild == "") {
+    listChannels();
     listUsers();
     guildSwitch = false;
     return;
@@ -420,6 +457,7 @@ function switchGuild() {
     const topChannel = findTopChannel(target);
     currentChannel = topChannel.id;
 
+    listChannels();
     listUsers();
   }
 
@@ -667,6 +705,7 @@ stdin.on("data", function (key) {
           console.log("<not in a guild>");
           break;
         }
+        listChannels();
         break;
       }
       case "L": {
