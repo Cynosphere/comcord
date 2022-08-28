@@ -15,6 +15,7 @@ let currentGuild,
   inEmoteMode = false,
   guildSwitch = false,
   channelSwitch = false,
+  extendedHistory = false,
   nameLength = 2;
 
 const messageQueue = [];
@@ -52,7 +53,14 @@ client.once("ready", function () {
   listGuilds();
 });
 
-function processMessage({name, content, bot, attachments, reply}) {
+function processMessage({
+  name,
+  content,
+  bot,
+  attachments,
+  reply,
+  isHistory = false,
+}) {
   if (name.length + 2 > nameLength) nameLength = name.length + 2;
 
   if (reply) {
@@ -61,39 +69,65 @@ function processMessage({name, content, bot, attachments, reply}) {
     const headerLength = 5 + reply.author.username.length;
     const length = headerLength + reply.content.length;
 
-    console.log(
-      chalk.bold.white(" \u250d ") +
-        nameColor(`[${reply.author.username}] `) +
-        chalk.reset(
-          `${
-            length > 79
-              ? reply.content.substring(0, length - headerLength) + "\u2026"
-              : reply.content
-          }`
-        )
-    );
+    if (isHistory) {
+      console.log(
+        ` \u250d [${reply.author.username}] ${
+          length > 79
+            ? reply.content.substring(0, length - headerLength) + "\u2026"
+            : reply.content
+        }`
+      );
+    } else {
+      console.log(
+        chalk.bold.white(" \u250d ") +
+          nameColor(`[${reply.author.username}] `) +
+          chalk.reset(
+            `${
+              length > 79
+                ? reply.content.substring(0, length - headerLength) + "\u2026"
+                : reply.content
+            }`
+          )
+      );
+    }
   }
 
   if (
     (content.startsWith("*") && content.endsWith("*")) ||
     (content.startsWith("_") && content.endsWith("_"))
   ) {
-    console.log(
-      chalk.bold.green(`<${name} ${content.substring(1, content.length - 1)}>`)
-    );
+    if (isHistory) {
+      console.log(`<${name} ${content.subString(1, content.length - 1)}>`);
+    } else {
+      console.log(
+        chalk.bold.green(
+          `<${name} ${content.substring(1, content.length - 1)}>`
+        )
+      );
+    }
   } else {
-    const nameColor = bot ? chalk.bold.yellow : chalk.bold.cyan;
+    if (isHistory) {
+      console.log(
+        `[${name}]${" ".repeat(nameLength - (name.length + 2))} ${content}`
+      );
+    } else {
+      const nameColor = bot ? chalk.bold.yellow : chalk.bold.cyan;
 
-    // TODO: markdown
-    console.log(
-      nameColor(`[${name}]`) +
-        " ".repeat(nameLength - (name.length + 2)) +
-        chalk.reset(" " + content)
-    );
+      // TODO: markdown
+      console.log(
+        nameColor(`[${name}]`) +
+          " ".repeat(nameLength - (name.length + 2)) +
+          chalk.reset(" " + content)
+      );
+    }
   }
 
   for (const attachment of attachments) {
-    console.log(chalk.bold.yellow(`<attachment: ${attachment.url} >`));
+    if (isHistory) {
+      console.log(`<attachment: ${attachment.url} >`);
+    } else {
+      console.log(chalk.bold.yellow(`<attachment: ${attachment.url} >`));
+    }
   }
 }
 
@@ -359,6 +393,7 @@ function listUsers() {
 }
 
 function switchGuild() {
+  targetGuild = targetGuild.trim();
   if (targetGuild == "") {
     listUsers();
     guildSwitch = false;
@@ -397,6 +432,7 @@ function gotoChannel() {
 }
 
 function switchChannel() {
+  targetChannel = targetChannel.trim();
   if (targetChannel == "") {
     listUsers();
     channelSwitch = false;
@@ -447,6 +483,71 @@ async function sendEmote() {
   }
   inEmoteMode = false;
   processQueue();
+}
+
+async function getHistory(limit = 20) {
+  const messages = await client.getMessages(currentChannel, {limit});
+  messages.reverse();
+
+  console.log("--Beginning-Review".padEnd(72, "-"));
+
+  for (const msg of messages) {
+    if (msg.content.indexOf("\n") > -1) {
+      const lines = msg.content.split("\n");
+      for (const index in lines) {
+        const line = lines[index];
+        processMessage({
+          name: msg.author.username,
+          bot: msg.author.bot,
+          content:
+            line +
+            (msg.editedTimestamp != null && index == lines.length - 1
+              ? " (edited)"
+              : ""),
+          attachments: index == lines.length - 1 ? msg.attachments : null,
+          reply: index == 0 ? msg.referencedMessage : null,
+          isHistory: true,
+        });
+      }
+    } else {
+      processMessage({
+        name: msg.author.username,
+        bot: msg.author.bot,
+        content: msg.content + (msg.editedTimestamp != null ? " (edited)" : ""),
+        attachments: msg.attachments,
+        reply: msg.referencedMessage,
+        isHistory: true,
+      });
+    }
+  }
+
+  console.log("--Review-Complete".padEnd(73, "-"));
+}
+
+let numLines = "";
+function startExtendedHistory() {
+  numLines = "";
+  extendedHistory = true;
+
+  stdout.write(":lines> ");
+}
+
+async function getExtendedHistory() {
+  numLines = numLines.trim();
+  numLines = parseInt(numLines);
+  if (isNaN(numLines)) {
+    console.log("<not a number>");
+    extendedHistory = false;
+    return;
+  }
+
+  try {
+    await getHistory(numLines);
+  } catch (err) {
+    console.log("<failed to get history: " + err.message + ">");
+  }
+
+  extendedHistory = false;
 }
 
 stdin.on("data", function (key) {
@@ -517,6 +618,23 @@ stdin.on("data", function (key) {
         toSend += key;
       }
     }
+  } else if (extendedHistory) {
+    if (key === "\r") {
+      console.log("");
+      getExtendedHistory();
+    } else {
+      if (key === "\b") {
+        if (numLines.length > 0) {
+          stdout.moveCursor(-1);
+          stdout.write(" ");
+          stdout.moveCursor(-1);
+          numLines = numLines.substring(0, numLines.length - 1);
+        }
+      } else {
+        stdout.write(key);
+        numLines += key;
+      }
+    }
   } else {
     switch (key) {
       case "\u0003":
@@ -566,6 +684,22 @@ stdin.on("data", function (key) {
           break;
         }
         startEmote();
+        break;
+      }
+      case "r": {
+        if (currentChannel == null) {
+          console.log("<not in a channel>");
+          break;
+        }
+        getHistory();
+        break;
+      }
+      case "R": {
+        if (currentChannel == null) {
+          console.log("<not in a channel>");
+          break;
+        }
+        startExtendedHistory();
         break;
       }
       case " ":

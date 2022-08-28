@@ -31,8 +31,8 @@ You **MUST** grant your bot all Privileged Gateway Intents.
   - [ ] Finger (f)
     - [ ] Shows presence data if available
     - [ ] Creation date, join date, ID, etc
-  - [ ] Room history (r)
-  - [ ] Extended room history (R)
+  - [x] Room history (r)
+  - [x] Extended room history (R)
 - [x] Message Receiving
   - [ ] Markdown styling
     - [ ] Common markdown (bold, italic, etc)
@@ -42,7 +42,7 @@ You **MUST** grant your bot all Privileged Gateway Intents.
   - [ ] Embeds in the style of commode's posted links
   - [x] Messages wrapped in `*`'s or `_`'s parsed as emotes
   - [ ] Inline DMs to replicate commode's private messages
-  - [ ] Replies
+  - [x] Replies
 - [x] Message sending
   - [x] Puts incoming messages into queue whilst in send mode
   - [ ] Mentions
