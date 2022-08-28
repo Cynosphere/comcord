@@ -23,9 +23,9 @@ You **MUST** grant your bot all Privileged Gateway Intents.
 ## TODO
 - [x] Commands
   - [x] Quit (q)
-  - [ ] Switch guilds (G)
+  - [x] Switch guilds (G)
   - [ ] Switch channels (g)
-  - [ ] List online users in guild (w)
+  - [x] List online users in guild (w)
   - [ ] Emote (e)
     - Just sends message surrounded in `*`'s
   - [ ] Finger (f)
@@ -51,3 +51,4 @@ You **MUST** grant your bot all Privileged Gateway Intents.
   - [ ] Default guild/channel
 - [ ] Threads
 - [ ] Not have the token just be in argv
+- [ ] Not have everything in one file

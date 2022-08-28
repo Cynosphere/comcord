@@ -12,6 +12,8 @@ stdin.setEncoding("utf8");
 let currentGuild,
   currentChannel,
   inSendMode = false,
+  guildSwitch = false,
+  channelSwitch = false,
   nameLength = 2;
 
 const messageQueue = [];
@@ -45,6 +47,8 @@ client.once("ready", function () {
       )
   );
   nameLength = client.user.username.length + 2;
+
+  listGuilds();
 });
 
 function processMessage({name, content, bot}) {
@@ -58,9 +62,8 @@ function processMessage({name, content, bot}) {
   } else {
     // TODO: markdown
     console.log(
-      chalk.bold.cyan(
-        `[${name}]` + " ".repeat(nameLength - (name.length + 2))
-      ) + chalk.reset(" " + content)
+      chalk.bold.cyan(`[${name}]`).padEnd(nameLength, " ") +
+        chalk.reset(" " + content)
     );
   }
 }
@@ -112,22 +115,32 @@ client.on("messageCreate", function (msg) {
 });
 
 let toSend = "";
-function setupSendMode() {
+async function setupSendMode() {
   inSendMode = true;
   toSend = "";
-  const name = `[${client.user.username}]`;
   stdout.write(
-    chalk.bold.cyan(name) +
-      " ".repeat(nameLength - name.length) +
+    chalk.bold.cyan(`[${client.user.username}]`).padEnd(nameLength, " ") +
       chalk.reset(" ")
   );
+  try {
+    await client.guilds
+      .get(currentGuild)
+      .channels.get(currentChannel)
+      .sendTyping();
+  } catch (err) {
+    //
+  }
 }
-function sendMessage() {
+async function sendMessage() {
   toSend = toSend.trim();
   if (toSend === "") {
     stdout.write("<no message sent>\n");
   } else {
-    client.createMessage(currentChannel, toSend);
+    try {
+      await client.createMessage(currentChannel, toSend);
+    } catch (err) {
+      console.log("<failed to send message: " + err.message + ">");
+    }
   }
   inSendMode = false;
   processQueue();
@@ -142,13 +155,12 @@ function showHelp() {
   let index = 0;
   for (const key of keys) {
     const desc = commands[key];
-    const length = `  ${key} - ${desc}`.length;
 
     stdout.write(
-      "  " +
-        chalk.bold.yellow(key) +
-        chalk.reset(" - " + desc) +
-        " ".repeat(Math.abs(25 - length))
+      ("  " + chalk.bold.yellow(key) + chalk.reset(" - " + desc)).padEnd(
+        25,
+        " "
+      )
     );
 
     index++;
@@ -159,9 +171,160 @@ function showHelp() {
   console.log("\nTo begin TALK MODE, press [SPACE]\n");
 }
 
+function listGuilds() {
+  let longest = 0;
+  const guilds = [];
+
+  for (const guild of client.guilds.values()) {
+    if (guild.name.length > longest) longest = guild.name.length;
+
+    const online = [...guild.members.values()].filter((m) => m.status).length;
+    guilds.push({name: guild.name, members: guild.memberCount, online});
+  }
+
+  console.log("");
+  console.log("  " + "guild-name".padStart(longest, " ") + "  online  total");
+  console.log("-".repeat(80));
+  for (const guild of guilds) {
+    console.log(
+      "  " +
+        guild.name.padStart(longest, " ") +
+        "  " +
+        guild.online.toString().padStart(6, " ") +
+        "  " +
+        guild.members.toString().padStart(5, " ")
+    );
+  }
+  console.log("");
+}
+
+let targetGuild = "";
+function gotoGuild() {
+  targetGuild = "";
+  guildSwitch = true;
+
+  stdout.write(":guild> ");
+}
+
+function findTopChannel(guildId) {
+  const guild = client.guilds.get(guildId);
+  const channels = [...guild.channels.values()].filter((c) => c.type == 0);
+  channels.sort((a, b) => a.position - b.position);
+
+  return channels[0];
+}
+
+function getStatus(status) {
+  let color;
+  switch (status) {
+    case "online":
+      color = chalk.bold.green;
+      break;
+    case "idle":
+      color = chalk.bold.yellow;
+      break;
+    case "dnd":
+      color = chalk.bold.red;
+      break;
+    default:
+      color = chalk.bold;
+      break;
+  }
+
+  return color(" \u2022 ");
+}
+
+function listUsers() {
+  const guild = client.guilds.get(currentGuild);
+  const channel = guild.channels.get(currentChannel);
+
+  console.log(
+    `\n[you are in '${guild.name}' in '${channel.name}' among ${guild.memberCount}]\n`
+  );
+
+  const online = [...guild.members.values()].filter((m) => m.status);
+  online.sort((a, b) => a.name - b.name);
+
+  let longest = 0;
+  for (const member of online) {
+    const name = member.user.username + "#" + member.user.discriminator;
+    if (name.length + 3 > longest) longest = name.length + 3;
+  }
+
+  const columns = Math.ceil(stdout.columns / longest);
+
+  let index = 0;
+  for (const member of online) {
+    const name = member.user.username + "#" + member.user.discriminator;
+    const status = getStatus(member.status);
+    const nameAndStatus = chalk.reset(name) + status;
+
+    index++;
+    stdout.write(
+      nameAndStatus +
+        " ".repeat(
+          index % columns == 0 ? 0 : Math.abs(longest - (name.length + 3))
+        )
+    );
+
+    if (index % columns == 0) stdout.write("\n");
+  }
+  if (index % columns != 0) stdout.write("\n");
+  console.log("");
+
+  if (channel.topic != null) {
+    console.log("--Topic".padEnd(80, "-"));
+    console.log(channel.topic);
+    console.log("-".repeat(80));
+    console.log("");
+  }
+}
+
+function switchGuild() {
+  let target;
+
+  for (const guild of client.guilds.values()) {
+    if (guild.name.toLowerCase().indexOf(targetGuild.toLowerCase()) > -1) {
+      target = guild.id;
+      break;
+    }
+  }
+
+  if (target == null) {
+    console.log("<guild not found>");
+  } else {
+    currentGuild = target;
+    // TODO: store last visited channel
+    const topChannel = findTopChannel(target);
+    currentChannel = topChannel.id;
+
+    listUsers();
+  }
+
+  guildSwitch = false;
+}
+
 stdin.on("data", function (key) {
-  if (inSendMode) {
+  if (guildSwitch) {
     if (key === "\r") {
+      console.log("");
+      switchGuild();
+    } else {
+      if (key === "\b") {
+        if (targetGuild.length > 0) {
+          stdout.moveCursor(-1);
+          stdout.write(" ");
+          stdout.moveCursor(-1);
+          targetGuild = targetGuild.substring(0, targetGuild.length - 1);
+        }
+      } else {
+        stdout.write(key);
+        targetGuild += key;
+      }
+    }
+  } else if (inSendMode) {
+    if (key === "\r") {
+      console.log("");
       sendMessage();
     } else {
       if (key === "\b") {
@@ -186,6 +349,36 @@ stdin.on("data", function (key) {
       }
       case "h": {
         showHelp();
+        break;
+      }
+      case "g": {
+        if (currentGuild == null) {
+          console.log("<not in a guild>");
+          break;
+        }
+        break;
+      }
+      case "G": {
+        gotoGuild();
+        break;
+      }
+      case "l": {
+        if (currentGuild == null) {
+          console.log("<not in a guild>");
+          break;
+        }
+        break;
+      }
+      case "L": {
+        listGuilds();
+        break;
+      }
+      case "w": {
+        if (currentGuild == null) {
+          console.log("<not in a guild>");
+          break;
+        }
+        listUsers();
         break;
       }
       case " ":
