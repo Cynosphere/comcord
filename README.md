@@ -33,6 +33,11 @@ You **MUST** grant your bot all Privileged Gateway Intents.
     - [ ] Creation date, join date, ID, etc
   - [x] Room history (r)
   - [x] Extended room history (R)
+  - [ ] List channels (l)
+  - [x] List guilds (L)
+  - [x] Clear (c)
+  - [ ] Surf channels forwards (>)
+  - [ ] Surf channels backwards (<)
 - [x] Message Receiving
   - [ ] Markdown styling
     - [ ] Common markdown (bold, italic, etc)

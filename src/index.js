@@ -30,9 +30,11 @@ const commands = {
   w: "who is in guild",
   f: "finger",
   r: "channel history",
-  R: "extended channel history",
+  R: "extended history",
   h: "command help",
   c: "clear",
+  "<": "surf backwards",
+  ">": "surf forwards",
 };
 
 const client = new Eris("Bot " + token, {
@@ -262,17 +264,18 @@ function showHelp() {
   console.log("\nCOMcord (c)left 2022\n");
 
   const keys = Object.keys(commands);
-  keys.sort();
+  keys.sort((a, b) => a.localeCompare(b));
 
   let index = 0;
   for (const key of keys) {
     const desc = commands[key];
+    const length = `  ${key} - ${desc}`.length;
 
     stdout.write(
-      ("  " + chalk.bold.yellow(key) + chalk.reset(" - " + desc)).padEnd(
-        25,
-        " "
-      )
+      "  " +
+        chalk.bold.yellow(key) +
+        chalk.reset(" - " + desc) +
+        " ".repeat(Math.abs(25 - length))
     );
 
     index++;
@@ -700,6 +703,16 @@ stdin.on("data", function (key) {
           break;
         }
         startExtendedHistory();
+        break;
+      }
+      case "c": {
+        console.clear();
+        break;
+      }
+      case "<": {
+        break;
+      }
+      case ">": {
         break;
       }
       case " ":
