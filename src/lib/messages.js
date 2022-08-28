@@ -9,7 +9,7 @@ function processMessage({
   noColor = false,
 }) {
   if (name.length + 2 > comcord.state.nameLength)
-    comcord.statenameLength = name.length + 2;
+    comcord.state.nameLength = name.length + 2;
 
   if (reply) {
     const nameColor = reply.author.bot ? chalk.bold.yellow : chalk.bold.cyan;
