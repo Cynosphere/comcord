@@ -56,4 +56,4 @@ You **MUST** grant your bot all Privileged Gateway Intents.
   - [ ] Default guild/channel
 - [ ] Threads
 - [ ] Not have the token just be in argv
-- [ ] Not have everything in one file
+- [x] Not have everything in one file

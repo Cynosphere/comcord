@@ -26,5 +26,6 @@ module.exports = {
     "require-atomic-updates": OFF,
   },
   globals: {
+    comcord: true,
   },
 };
