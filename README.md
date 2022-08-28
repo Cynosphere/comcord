@@ -24,9 +24,9 @@ You **MUST** grant your bot all Privileged Gateway Intents.
 - [x] Commands
   - [x] Quit (q)
   - [x] Switch guilds (G)
-  - [ ] Switch channels (g)
+  - [x] Switch channels (g)
   - [x] List online users in guild (w)
-  - [ ] Emote (e)
+  - [x] Emote (e)
     - Just sends message surrounded in `*`'s
   - [ ] Finger (f)
     - [ ] Shows presence data if available

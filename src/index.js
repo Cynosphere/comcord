@@ -52,8 +52,27 @@ client.once("ready", function () {
   listGuilds();
 });
 
-function processMessage({name, content, bot, attachments}) {
+function processMessage({name, content, bot, attachments, reply}) {
   if (name.length + 2 > nameLength) nameLength = name.length + 2;
+
+  if (reply) {
+    const nameColor = reply.author.bot ? chalk.bold.yellow : chalk.bold.cyan;
+
+    const headerLength = 5 + reply.author.username.length;
+    const length = headerLength + reply.content.length;
+
+    console.log(
+      chalk.bold.white(" \u250d ") +
+        nameColor(`[${reply.author.username}] `) +
+        chalk.reset(
+          `${
+            length > 79
+              ? reply.content.substring(0, length - headerLength) + "\u2026"
+              : reply.content
+          }`
+        )
+    );
+  }
 
   if (
     (content.startsWith("*") && content.endsWith("*")) ||
@@ -63,8 +82,7 @@ function processMessage({name, content, bot, attachments}) {
       chalk.bold.green(`<${name} ${content.substring(1, content.length - 1)}>`)
     );
   } else {
-    let nameColor = chalk.bold.cyan;
-    if (bot) nameColor = chalk.bold.yellow;
+    const nameColor = bot ? chalk.bold.yellow : chalk.bold.cyan;
 
     // TODO: markdown
     console.log(
@@ -72,9 +90,10 @@ function processMessage({name, content, bot, attachments}) {
         " ".repeat(nameLength - (name.length + 2)) +
         chalk.reset(" " + content)
     );
-    for (const attachment of attachments) {
-      console.log(chalk.bold.yellow(`<attachment: ${attachment.url} >`));
-    }
+  }
+
+  for (const attachment of attachments) {
+    console.log(chalk.bold.yellow(`<attachment: ${attachment.url} >`));
   }
 }
 
@@ -89,6 +108,7 @@ function processQueue() {
           bot: msg.author.bot,
           content: line,
           attachments: index == lines.length - 1 ? msg.attachments : null,
+          reply: index == 0 ? msg.referencedMessage : null,
         });
       }
     } else {
@@ -97,6 +117,7 @@ function processQueue() {
         bot: msg.author.bot,
         content: msg.content,
         attachments: msg.attachments,
+        reply: msg.referencedMessage,
       });
     }
   }
@@ -120,6 +141,7 @@ client.on("messageCreate", function (msg) {
             bot: msg.author.bot,
             content: line,
             attachments: index == lines.length - 1 ? msg.attachments : null,
+            reply: index == 0 ? msg.referencedMessage : null,
           });
         }
       } else {
@@ -128,6 +150,7 @@ client.on("messageCreate", function (msg) {
           bot: msg.author.bot,
           content: msg.content,
           attachments: msg.attachments,
+          reply: msg.referencedMessage,
         });
       }
     }
@@ -151,6 +174,7 @@ client.on("messageUpdate", function (msg, old) {
             bot: msg.author.bot,
             content: line + index == lines.length - 1 ? " (edited)" : null,
             attachments: index == lines.length - 1 ? msg.attachments : null,
+            reply: index == 0 ? msg.referencedMessage : null,
           });
         }
       } else {
@@ -159,6 +183,7 @@ client.on("messageUpdate", function (msg, old) {
           bot: msg.author.bot,
           content: msg.content + " (edited)",
           attachments: msg.attachments,
+          reply: msg.referencedMessage,
         });
       }
     }
