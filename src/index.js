@@ -12,6 +12,7 @@ stdin.setEncoding("utf8");
 let currentGuild,
   currentChannel,
   inSendMode = false,
+  inEmoteMode = false,
   guildSwitch = false,
   channelSwitch = false,
   nameLength = 2;
@@ -51,14 +52,16 @@ client.once("ready", function () {
   listGuilds();
 });
 
-function processMessage({name, content, bot}) {
+function processMessage({name, content, bot, attachments}) {
   if (name.length + 2 > nameLength) nameLength = name.length + 2;
 
   if (
     (content.startsWith("*") && content.endsWith("*")) ||
     (content.startsWith("_") && content.endsWith("_"))
   ) {
-    console.log(chalk.bold.green(`<${name} ${content}>`));
+    console.log(
+      chalk.bold.green(`<${name} ${content.substring(1, content.length - 1)}>`)
+    );
   } else {
     let nameColor = chalk.bold.cyan;
     if (bot) nameColor = chalk.bold.yellow;
@@ -69,6 +72,9 @@ function processMessage({name, content, bot}) {
         " ".repeat(nameLength - (name.length + 2)) +
         chalk.reset(" " + content)
     );
+    for (const attachment of attachments) {
+      console.log(chalk.bold.yellow(`<attachment: ${attachment.url} >`));
+    }
   }
 }
 
@@ -76,11 +82,13 @@ function processQueue() {
   for (const msg of messageQueue) {
     if (msg.content.indexOf("\n") > -1) {
       const lines = msg.content.split("\n");
-      for (const line of lines) {
+      for (const index in lines) {
+        const line = lines[index];
         processMessage({
           name: msg.author.username,
           bot: msg.author.bot,
           content: line,
+          attachments: index == lines.length - 1 ? msg.attachments : null,
         });
       }
     } else {
@@ -88,25 +96,30 @@ function processQueue() {
         name: msg.author.username,
         bot: msg.author.bot,
         content: msg.content,
+        attachments: msg.attachments,
       });
     }
   }
+
+  messageQueue.splice(0, messageQueue.length);
 }
 
 client.on("messageCreate", function (msg) {
   if (msg.author.id === client.user.id) return;
 
   if (msg.channel.id == currentChannel) {
-    if (inSendMode) {
+    if (inSendMode || inEmoteMode) {
       messageQueue.push(msg);
     } else {
       if (msg.content.indexOf("\n") > -1) {
         const lines = msg.content.split("\n");
-        for (const line of lines) {
+        for (const index in lines) {
+          const line = lines[index];
           processMessage({
             name: msg.author.username,
             bot: msg.author.bot,
             content: line,
+            attachments: index == lines.length - 1 ? msg.attachments : null,
           });
         }
       } else {
@@ -114,6 +127,38 @@ client.on("messageCreate", function (msg) {
           name: msg.author.username,
           bot: msg.author.bot,
           content: msg.content,
+          attachments: msg.attachments,
+        });
+      }
+    }
+  }
+});
+client.on("messageUpdate", function (msg, old) {
+  if (msg.author.id === client.user.id) return;
+
+  if (msg.channel.id == currentChannel) {
+    if (msg.content == old.content) return;
+
+    if (inSendMode || inEmoteMode) {
+      messageQueue.push(msg);
+    } else {
+      if (msg.content.indexOf("\n") > -1) {
+        const lines = msg.content.split("\n");
+        for (const index in lines) {
+          const line = lines[index];
+          processMessage({
+            name: msg.author.username,
+            bot: msg.author.bot,
+            content: line + index == lines.length - 1 ? " (edited)" : null,
+            attachments: index == lines.length - 1 ? msg.attachments : null,
+          });
+        }
+      } else {
+        processMessage({
+          name: msg.author.username,
+          bot: msg.author.bot,
+          content: msg.content + " (edited)",
+          attachments: msg.attachments,
         });
       }
     }
@@ -144,6 +189,7 @@ async function sendMessage() {
     stdout.write("<no message sent>\n");
   } else {
     try {
+      stdout.write("\n");
       await client.createMessage(currentChannel, toSend);
     } catch (err) {
       console.log("<failed to send message: " + err.message + ">");
@@ -335,6 +381,7 @@ function switchChannel() {
 
   const guild = client.guilds.get(currentGuild);
   const channels = [...guild.channels.values()].filter((c) => c.type == 0);
+  channels.sort((a, b) => a.position - b.position);
 
   for (const channel of channels) {
     if (channel.name.toLowerCase().indexOf(targetChannel.toLowerCase()) > -1) {
@@ -352,6 +399,29 @@ function switchChannel() {
   }
 
   channelSwitch = false;
+}
+
+function startEmote() {
+  toSend = "";
+  inEmoteMode = true;
+
+  stdout.write(":emote> ");
+}
+
+async function sendEmote() {
+  toSend = toSend.trim();
+  if (toSend === "") {
+    console.log("<no message sent>");
+  } else {
+    try {
+      await client.createMessage(currentChannel, "*" + toSend + "*");
+      console.log(`<${client.user.username} ${toSend}>`);
+    } catch (err) {
+      console.log("<failed to send message: " + err.message + ">");
+    }
+  }
+  inEmoteMode = false;
+  processQueue();
 }
 
 stdin.on("data", function (key) {
@@ -391,8 +461,24 @@ stdin.on("data", function (key) {
     }
   } else if (inSendMode) {
     if (key === "\r") {
-      console.log("");
       sendMessage();
+    } else {
+      if (key === "\b") {
+        if (toSend.length > 0) {
+          stdout.moveCursor(-1);
+          stdout.write(" ");
+          stdout.moveCursor(-1);
+          toSend = toSend.substring(0, toSend.length - 1);
+        }
+      } else {
+        stdout.write(key);
+        toSend += key;
+      }
+    }
+  } else if (inEmoteMode) {
+    if (key === "\r") {
+      console.log("");
+      sendEmote();
     } else {
       if (key === "\b") {
         if (toSend.length > 0) {
@@ -447,6 +533,14 @@ stdin.on("data", function (key) {
           break;
         }
         listUsers();
+        break;
+      }
+      case "e": {
+        if (currentChannel == null) {
+          console.log("<not in a channel>");
+          break;
+        }
+        startEmote();
         break;
       }
       case " ":
