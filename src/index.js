@@ -60,9 +60,13 @@ function processMessage({name, content, bot}) {
   ) {
     console.log(chalk.bold.green(`<${name} ${content}>`));
   } else {
+    let nameColor = chalk.bold.cyan;
+    if (bot) nameColor = chalk.bold.yellow;
+
     // TODO: markdown
     console.log(
-      chalk.bold.cyan(`[${name}]`).padEnd(nameLength, " ") +
+      nameColor(`[${name}]`) +
+        " ".repeat(nameLength - (name.length + 2)) +
         chalk.reset(" " + content)
     );
   }
@@ -74,14 +78,14 @@ function processQueue() {
       const lines = msg.content.split("\n");
       for (const line of lines) {
         processMessage({
-          name: msg.author.name,
+          name: msg.author.username,
           bot: msg.author.bot,
           content: line,
         });
       }
     } else {
       processMessage({
-        name: msg.author.name,
+        name: msg.author.username,
         bot: msg.author.bot,
         content: msg.content,
       });
@@ -90,6 +94,8 @@ function processQueue() {
 }
 
 client.on("messageCreate", function (msg) {
+  if (msg.author.id === client.user.id) return;
+
   if (msg.channel.id == currentChannel) {
     if (inSendMode) {
       messageQueue.push(msg);
@@ -98,14 +104,14 @@ client.on("messageCreate", function (msg) {
         const lines = msg.content.split("\n");
         for (const line of lines) {
           processMessage({
-            name: msg.author.name,
+            name: msg.author.username,
             bot: msg.author.bot,
             content: line,
           });
         }
       } else {
         processMessage({
-          name: msg.author.name,
+          name: msg.author.username,
           bot: msg.author.bot,
           content: msg.content,
         });
@@ -119,7 +125,8 @@ async function setupSendMode() {
   inSendMode = true;
   toSend = "";
   stdout.write(
-    chalk.bold.cyan(`[${client.user.username}]`).padEnd(nameLength, " ") +
+    chalk.bold.cyan(`[${client.user.username}]`) +
+      " ".repeat(nameLength - (client.user.username.length + 2)) +
       chalk.reset(" ")
   );
   try {
@@ -281,6 +288,12 @@ function listUsers() {
 }
 
 function switchGuild() {
+  if (targetGuild == "") {
+    listUsers();
+    guildSwitch = false;
+    return;
+  }
+
   let target;
 
   for (const guild of client.guilds.values()) {
@@ -294,7 +307,7 @@ function switchGuild() {
     console.log("<guild not found>");
   } else {
     currentGuild = target;
-    // TODO: store last visited channel
+    // TODO: store last visited channel and switch to it if we've been to this guild before
     const topChannel = findTopChannel(target);
     currentChannel = topChannel.id;
 
@@ -302,6 +315,43 @@ function switchGuild() {
   }
 
   guildSwitch = false;
+}
+
+let targetChannel = "";
+function gotoChannel() {
+  targetChannel = "";
+  channelSwitch = true;
+
+  stdout.write(":channel> ");
+}
+
+function switchChannel() {
+  if (targetChannel == "") {
+    listUsers();
+    channelSwitch = false;
+    return;
+  }
+  let target;
+
+  const guild = client.guilds.get(currentGuild);
+  const channels = [...guild.channels.values()].filter((c) => c.type == 0);
+
+  for (const channel of channels) {
+    if (channel.name.toLowerCase().indexOf(targetChannel.toLowerCase()) > -1) {
+      target = channel.id;
+      break;
+    }
+  }
+
+  if (target == null) {
+    console.log("<channel not found>");
+  } else {
+    currentChannel = target;
+
+    listUsers();
+  }
+
+  channelSwitch = false;
 }
 
 stdin.on("data", function (key) {
@@ -320,6 +370,23 @@ stdin.on("data", function (key) {
       } else {
         stdout.write(key);
         targetGuild += key;
+      }
+    }
+  } else if (channelSwitch) {
+    if (key === "\r") {
+      console.log("");
+      switchChannel();
+    } else {
+      if (key === "\b") {
+        if (targetChannel.length > 0) {
+          stdout.moveCursor(-1);
+          stdout.write(" ");
+          stdout.moveCursor(-1);
+          targetChannel = targetChannel.substring(0, targetChannel.length - 1);
+        }
+      } else {
+        stdout.write(key);
+        targetChannel += key;
       }
     }
   } else if (inSendMode) {
@@ -356,6 +423,7 @@ stdin.on("data", function (key) {
           console.log("<not in a guild>");
           break;
         }
+        gotoChannel();
         break;
       }
       case "G": {
