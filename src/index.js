@@ -121,7 +121,7 @@ process.stdin.on("data", async function (key) {
       await finalizePrompt();
       processQueue();
     } else {
-      if (key === "\b") {
+      if (key === "\b" || key === "\u007f") {
         if (comcord.state.promptInput.length > 0) {
           process.stdout.moveCursor(-1);
           process.stdout.write(" ");
