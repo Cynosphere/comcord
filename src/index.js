@@ -321,7 +321,11 @@ function listChannels() {
   channels.sort((a, b) => a.position - b.position);
 
   for (const channel of channels) {
-    if (channel.name.length > longest) longest = channel.name.length;
+    const perms = channel.permissionsOf(client.user.id);
+    const private = !perms.has(Eris.Constants.Permissions.readMessages);
+
+    if (channel.name.length + (private ? 1 : 0) > longest)
+      longest = channel.name.length + (private ? 1 : 0);
     if (channel.topic != null && channel.topic.length > longestTopic)
       longestTopic = channel.topic.length;
   }
@@ -337,9 +341,12 @@ function listChannels() {
   for (const channel of channels) {
     const topic =
       channel.topic != null ? channel.topic.replace(/\n/g, " ") : "";
+    const perms = channel.permissionsOf(client.user.id);
+    const private = !perms.has(Eris.Constants.Permissions.readMessages);
+
     console.log(
       "  " +
-        channel.name.padStart(longest, " ") +
+        ((private ? "*" : "") + channel.name).padStart(longest, " ") +
         "  " +
         (topic.length > 80 - longest + 9
           ? topic.substring(0, 79 - (longest + 5)) + "\u2026"
