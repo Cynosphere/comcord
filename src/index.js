@@ -1,6 +1,5 @@
 const Eris = require("eris");
 const chalk = require("chalk");
-const {inspect} = require("util");
 
 const token = process.argv[2];
 const stdin = process.stdin;
@@ -16,6 +15,21 @@ let currentGuild,
   nameLength = 2;
 
 const messageQueue = [];
+
+const commands = {
+  q: "quit comcord",
+  e: "emote",
+  g: "goto a channel",
+  G: "goto a guild",
+  l: "list channels",
+  L: "list guilds",
+  w: "who is in guild",
+  f: "finger",
+  r: "channel history",
+  R: "extended channel history",
+  h: "command help",
+  c: "clear",
+};
 
 const client = new Eris("Bot " + token, {
   defaultImageFormat: "png",
@@ -44,8 +58,9 @@ function processMessage({name, content, bot}) {
   } else {
     // TODO: markdown
     console.log(
-      chalk.bold.cyan(`[${name}]` + " ".rep(nameLength - (name.length + 2))) +
-        chalk.reset(" " + content)
+      chalk.bold.cyan(
+        `[${name}]` + " ".repeat(nameLength - (name.length + 2))
+      ) + chalk.reset(" " + content)
     );
   }
 }
@@ -102,7 +117,9 @@ function setupSendMode() {
   toSend = "";
   const name = `[${client.user.username}]`;
   stdout.write(
-    chalk.bold.cyan(name) + " ".rep(nameLength - name.length) + chalk.reset(" ")
+    chalk.bold.cyan(name) +
+      " ".repeat(nameLength - name.length) +
+      chalk.reset(" ")
   );
 }
 function sendMessage() {
@@ -114,6 +131,32 @@ function sendMessage() {
   }
   inSendMode = false;
   processQueue();
+}
+
+function showHelp() {
+  console.log("\nCOMcord (c)left 2022\n");
+
+  const keys = Object.keys(commands);
+  keys.sort();
+
+  let index = 0;
+  for (const key of keys) {
+    const desc = commands[key];
+    const length = `  ${key} - ${desc}`.length;
+
+    stdout.write(
+      "  " +
+        chalk.bold.yellow(key) +
+        chalk.reset(" - " + desc) +
+        " ".repeat(Math.abs(25 - length))
+    );
+
+    index++;
+    if (index % 3 == 0) stdout.write("\n");
+  }
+  if (index % 3 != 0) stdout.write("\n");
+
+  console.log("\nTo begin TALK MODE, press [SPACE]\n");
 }
 
 stdin.on("data", function (key) {
@@ -136,15 +179,20 @@ stdin.on("data", function (key) {
   } else {
     switch (key) {
       case "\u0003":
-      case "q":
+      case "q": {
         client.disconnect(false);
         process.exit(0);
         break;
+      }
+      case "h": {
+        showHelp();
+        break;
+      }
       case " ":
       case "\r":
       default: {
         if (currentChannel == null) {
-          console.log("not in a channel");
+          console.log("<not in a channel>");
           break;
         }
         setupSendMode();
@@ -155,3 +203,6 @@ stdin.on("data", function (key) {
 });
 
 client.connect();
+
+console.log("COMcord (c)left 2022");
+console.log("Type 'h' for Commands");
