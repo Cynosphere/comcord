@@ -6,7 +6,6 @@ const {listUsers} = require("./listUsers");
 function switchChannel(input) {
   if (input == "") {
     listUsers();
-    comcord.state.channelSwitch = false;
     return;
   }
   let target;
@@ -29,6 +28,10 @@ function switchChannel(input) {
     comcord.state.lastChannel.set(comcord.state.currentGuild, target);
 
     listUsers();
+
+    const channel = guild.channels.get(comcord.state.currentChannel);
+
+    process.title = `${guild.name} - ${channel.name} - comcord`;
   }
 }
 

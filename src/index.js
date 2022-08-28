@@ -3,6 +3,8 @@ const chalk = require("chalk");
 
 const token = process.argv[2];
 
+process.title = "comcord";
+
 global.comcord = {
   state: {
     currentGuild: null,

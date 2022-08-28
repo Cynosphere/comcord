@@ -17,12 +17,14 @@ function processMessage({
     const headerLength = 5 + reply.author.username.length;
     const length = headerLength + reply.content.length;
 
+    const replyContent = reply.content.replace(/\n/g, " ");
+
     if (noColor) {
       console.log(
         ` \u250d [${reply.author.username}] ${
           length > 79
-            ? reply.content.substring(0, length - headerLength) + "\u2026"
-            : reply.content
+            ? replyContent.substring(0, length - headerLength) + "\u2026"
+            : replyContent
         }`
       );
     } else {
@@ -32,8 +34,8 @@ function processMessage({
           chalk.reset(
             `${
               length > 79
-                ? reply.content.substring(0, length - headerLength) + "\u2026"
-                : reply.content
+                ? replyContent.substring(0, length - headerLength) + "\u2026"
+                : replyContent
             }`
           )
       );

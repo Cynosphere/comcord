@@ -32,7 +32,6 @@ function switchGuild(input) {
     console.log("<guild not found>");
   } else {
     comcord.state.currentGuild = target;
-    // TODO: store last visited channel and switch to it if we've been to this guild before
     if (!comcord.state.lastChannel.has(target)) {
       const topChannel = findTopChannel(target);
       comcord.state.currentChannel = topChannel.id;
@@ -43,6 +42,11 @@ function switchGuild(input) {
 
     listChannels();
     listUsers();
+
+    const guild = comcord.client.guilds.get(comcord.state.currentGuild);
+    const channel = guild.channels.get(comcord.state.currentChannel);
+
+    process.title = `${guild.name} - ${channel.name} - comcord`;
   }
 }
 
