@@ -99,7 +99,7 @@ function processMessage({
     (content.startsWith("_") && content.endsWith("_"))
   ) {
     if (isHistory) {
-      console.log(`<${name} ${content.subString(1, content.length - 1)}>`);
+      console.log(`<${name} ${content.substring(1, content.length - 1)}>`);
     } else {
       console.log(
         chalk.bold.green(
@@ -124,11 +124,13 @@ function processMessage({
     }
   }
 
-  for (const attachment of attachments) {
-    if (isHistory) {
-      console.log(`<attachment: ${attachment.url} >`);
-    } else {
-      console.log(chalk.bold.yellow(`<attachment: ${attachment.url} >`));
+  if (attachments) {
+    for (const attachment of attachments) {
+      if (isHistory) {
+        console.log(`<attachment: ${attachment.url} >`);
+      } else {
+        console.log(chalk.bold.yellow(`<attachment: ${attachment.url} >`));
+      }
     }
   }
 }
@@ -143,7 +145,7 @@ function processQueue() {
           name: msg.author.username,
           bot: msg.author.bot,
           content: line,
-          attachments: index == lines.length - 1 ? msg.attachments : null,
+          attachments: index == lines.length - 1 ? msg.attachments : [],
           reply: index == 0 ? msg.referencedMessage : null,
         });
       }
@@ -176,7 +178,7 @@ client.on("messageCreate", function (msg) {
             name: msg.author.username,
             bot: msg.author.bot,
             content: line,
-            attachments: index == lines.length - 1 ? msg.attachments : null,
+            attachments: index == lines.length - 1 ? msg.attachments : [],
             reply: index == 0 ? msg.referencedMessage : null,
           });
         }
@@ -208,8 +210,8 @@ client.on("messageUpdate", function (msg, old) {
           processMessage({
             name: msg.author.username,
             bot: msg.author.bot,
-            content: line + index == lines.length - 1 ? " (edited)" : null,
-            attachments: index == lines.length - 1 ? msg.attachments : null,
+            content: line + (index == lines.length - 1 ? " (edited)" : ""),
+            attachments: index == lines.length - 1 ? msg.attachments : [],
             reply: index == 0 ? msg.referencedMessage : null,
           });
         }
