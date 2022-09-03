@@ -134,6 +134,7 @@ process.stdin.on("data", async function (key) {
           );
         }
       } else {
+        key = key.replace("\u001b", "");
         process.stdout.write(key);
         comcord.state.promptInput += key;
       }
