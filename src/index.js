@@ -152,3 +152,53 @@ client.connect();
 
 console.log("COMcord (c)left 2022");
 console.log("Type 'h' for Commands");
+
+const dateObj = new Date();
+let sentTime = false;
+
+const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const months = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+setInterval(function () {
+  dateObj.setTime(Date.now());
+
+  const hour = dateObj.getUTCHours(),
+    minutes = dateObj.getUTCMinutes(),
+    seconds = dateObj.getUTCSeconds(),
+    day = dateObj.getUTCDate(),
+    month = dateObj.getUTCMonth(),
+    year = dateObj.getUTCFullYear(),
+    weekDay = dateObj.getUTCDay();
+
+  const timeString = `[${weekdays[weekDay]} ${day
+    .toString()
+    .padStart(2, "0")}-${months[month]}-${year
+    .toString()
+    .substring(2, 4)} ${hour.toString().padStart(2, "0")}:${minutes
+    .toString()
+    .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}]`;
+
+  if (minutes % 15 == 0 && seconds < 2 && !sentTime) {
+    if (comcord.state.inPrompt == true) {
+      comcord.state.messageQueue.push({time: true, content: timeString});
+    } else {
+      console.log(timeString);
+    }
+    sentTime = true;
+  } else if (seconds > 2 && sentTime) {
+    sentTime = false;
+  }
+}, 500);

@@ -87,7 +87,9 @@ function processMessage({
 
 function processQueue() {
   for (const msg of comcord.state.messageQueue) {
-    if (msg.content.indexOf("\n") > -1) {
+    if (msg.time) {
+      console.log(msg.content);
+    } else if (msg.content.indexOf("\n") > -1) {
       const lines = msg.content.split("\n");
       for (const index in lines) {
         const line = lines[index];
