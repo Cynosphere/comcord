@@ -51,6 +51,7 @@ client.once("ready", function () {
 
   listGuilds();
 });
+client.on("error", function () {});
 
 client.on("messageCreate", function (msg) {
   if (msg.author.id === client.user.id) return;
