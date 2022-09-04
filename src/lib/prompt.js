@@ -14,9 +14,6 @@ async function finalizePrompt() {
 
   const input = comcord.state.promptInput.trim();
   await comcord.state.promptCallback(input);
-
-  comcord.state.promptInput = null;
-  comcord.state.promptCallback = null;
 }
 
 module.exports = {
