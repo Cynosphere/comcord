@@ -23,7 +23,7 @@ function processMessage({
       console.log(
         ` \u250d [${reply.author.username}] ${
           length > 79
-            ? replyContent.substring(0, length - headerLength) + "\u2026"
+            ? replyContent.substring(0, 79 - headerLength) + "\u2026"
             : replyContent
         }`
       );
@@ -34,7 +34,7 @@ function processMessage({
           chalk.reset(
             `${
               length > 79
-                ? replyContent.substring(0, length - headerLength) + "\u2026"
+                ? replyContent.substring(0, 79 - headerLength) + "\u2026"
                 : replyContent
             }`
           )
