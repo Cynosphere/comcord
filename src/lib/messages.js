@@ -1,10 +1,55 @@
 const chalk = require("chalk");
 
+const REGEX_MENTION = /<@!?(\d+)>/g;
+const REGEX_ROLE_MENTION = /<@&?(\d+)>/g;
+const REGEX_CHANNEL = /<#(\d+)>/g;
+const REGEX_EMOTE = /<(?:\u200b|&)?a?:(\w+):(\d+)>/g;
+const REGEX_COMMAND = /<\/([^\s]+?):(\d+)>/g;
+
+function replaceMentions(_, id) {
+  const user = comcord.client.users.get(id);
+  if (user) {
+    return `@${user.username}`;
+  } else {
+    return "@Unknown User";
+  }
+}
+function replaceRoles(_, id) {
+  const role = comcord.client.guilds
+    .get(comcord.state.currentGuild)
+    .roles.get(id);
+  if (role) {
+    return `[@${role.name}]`;
+  } else {
+    return "[@Unknown Role]";
+  }
+}
+function replaceChannels(_, id) {
+  const guildForChannel = comcord.client.channelGuildMap[id];
+  if (guildForChannel) {
+    const channel = comcord.client.guilds.get(guildForChannel).channels.get(id);
+    if (channel) {
+      return `#${channel.name}`;
+    } else {
+      return "#unknown-channel";
+    }
+  } else {
+    return "#unknown-channel";
+  }
+}
+function replaceEmotes(_, name, id) {
+  return `:${name}:`;
+}
+function replaceCommands(_, name, id) {
+  return `/${name}`;
+}
+
 function processMessage({
   name,
   content,
   bot,
   attachments,
+  stickers,
   reply,
   noColor = false,
 }) {
@@ -17,7 +62,13 @@ function processMessage({
     const headerLength = 5 + reply.author.username.length;
     const length = headerLength + reply.content.length;
 
-    const replyContent = reply.content.replace(/\n/g, " ");
+    let replyContent = reply.content.replace(/\n/g, " ");
+    replyContent = replyContent
+      .replace(REGEX_MENTION, replaceMentions)
+      .replace(REGEX_ROLE_MENTION, replaceRoles)
+      .replace(REGEX_CHANNEL, replaceChannels)
+      .replace(REGEX_EMOTE, replaceEmotes)
+      .replace(REGEX_COMMAND, replaceCommands);
 
     if (noColor) {
       console.log(
@@ -42,8 +93,15 @@ function processMessage({
     }
   }
 
+  content = content
+    .replace(REGEX_MENTION, replaceMentions)
+    .replace(REGEX_ROLE_MENTION, replaceRoles)
+    .replace(REGEX_CHANNEL, replaceChannels)
+    .replace(REGEX_EMOTE, replaceEmotes)
+    .replace(REGEX_COMMAND, replaceCommands);
+
   if (
-    (content.startsWith("*") && content.endsWith("*")) ||
+    (content.length > 1 && content.startsWith("*") && content.endsWith("*")) ||
     (content.startsWith("_") && content.endsWith("_"))
   ) {
     if (noColor) {
@@ -83,6 +141,22 @@ function processMessage({
       }
     }
   }
+
+  if (stickers) {
+    for (const sticker of stickers) {
+      if (noColor) {
+        console.log(
+          `<sticker: "${sticker.name}" https://media.discordapp.net/stickers/${sticker.id}.png >`
+        );
+      } else {
+        console.log(
+          chalk.bold.yellow(
+            `<sticker: "${sticker.name}" https://media.discordapp.net/stickers/${sticker.id}.png >`
+          )
+        );
+      }
+    }
+  }
 }
 
 function processQueue() {
@@ -98,6 +172,7 @@ function processQueue() {
           bot: msg.author.bot,
           content: line,
           attachments: index == lines.length - 1 ? msg.attachments : [],
+          stickers: index == lines.length - 1 ? msg.stickerItems : [],
           reply: index == 0 ? msg.referencedMessage : null,
         });
       }
@@ -107,6 +182,7 @@ function processQueue() {
         bot: msg.author.bot,
         content: msg.content,
         attachments: msg.attachments,
+        stickers: msg.stickerItems,
         reply: msg.referencedMessage,
       });
     }
