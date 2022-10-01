@@ -6,6 +6,108 @@ const REGEX_CHANNEL = /<#(\d+)>/g;
 const REGEX_EMOTE = /<(?:\u200b|&)?a?:(\w+):(\d+)>/g;
 const REGEX_COMMAND = /<\/([^\s]+?):(\d+)>/g;
 
+function readableTime(time) {
+  const seconds = time / 1000;
+  const minutes = seconds / 60;
+  const hours = minutes / 60;
+  const days = hours / 24;
+  const weeks = days / 7;
+  const months = days / 30;
+  const years = days / 365.25;
+
+  if (years >= 1) {
+    return `${years.toFixed(0)} year${years > 1 ? "s" : ""}`;
+  } else if (weeks > 5 && months < 13) {
+    return `${months.toFixed(0)} month${months > 1 ? "s" : ""}`;
+  } else if (days > 7 && weeks < 5) {
+    return `${weeks.toFixed(0)} week${weeks > 1 ? "s" : ""}`;
+  } else if (hours > 24 && days < 7) {
+    return `${days.toFixed(0)} day${days > 1 ? "s" : ""}`;
+  } else if (minutes > 60 && hours < 24) {
+    return `${hours.toFixed(0)} hour${hours > 1 ? "s" : ""}`;
+  } else if (seconds > 60 && minutes < 60) {
+    return `${minutes.toFixed(0)} minute${minutes > 1 ? "s" : ""}`;
+  } else {
+    return `${seconds.toFixed(0)} second${seconds > 1 ? "s" : ""}`;
+  }
+}
+
+const MONTH_NAMES = [
+  "January",
+  "Feburary",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+const DAY_NAMES = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+const TIME_FORMATS = {
+  t: function (time) {
+    const timeObj = new Date(time);
+    return timeObj.getUTCHours() + 1 + ":" + timeObj.getUTCMinutes();
+  },
+  T: function (time) {
+    const timeObj = new Date(time);
+    return TIME_FORMATS.t(time) + ":" + timeObj.getUTCSeconds();
+  },
+  d: function (time) {
+    const timeObj = new Date(time);
+    return (
+      timeObj.getUTCFullYear() +
+      "/" +
+      (timeObj.getUTCMonth() + 1).toString().padStart(2, "0") +
+      "/" +
+      timeObj.getUTCDate().toString().padStart(2, "0")
+    );
+  },
+  D: function (time) {
+    const timeObj = new Date(time);
+    return (
+      timeObj.getUTCDate() +
+      " " +
+      MONTH_NAMES[timeObj.getUTCMonth()] +
+      " " +
+      timeObj.getUTCFullYear()
+    );
+  },
+  f: function (time) {
+    return TIME_FORMATS.D(time) + " " + TIME_FORMATS.t(time);
+  },
+  F: function (time) {
+    const timeObj = new Date(time);
+    return DAY_NAMES[timeObj.getUTCDay()] + ", " + TIME_FORMATS.f(time);
+  },
+  R: function (time) {
+    const now = Date.now();
+
+    if (time > now) {
+      const delta = time - now;
+      return "in " + readableTime(delta);
+    } else {
+      const delta = now - time;
+      return readableTime(delta) + " ago";
+    }
+  },
+};
+const REGEX_TIMESTAMP = new RegExp(
+  `<t:(-?\\d{1,17})(?::(${Object.keys(TIME_FORMATS).join("|")}))?>`,
+  "g"
+);
+
 function replaceMentions(_, id) {
   const user = comcord.client.users.get(id);
   if (user) {
@@ -43,6 +145,9 @@ function replaceEmotes(_, name, id) {
 function replaceCommands(_, name, id) {
   return `/${name}`;
 }
+function replaceTimestamps(_, time, format = "f") {
+  return TIME_FORMATS[format](time * 1000);
+}
 
 function processMessage({
   name,
@@ -68,7 +173,8 @@ function processMessage({
       .replace(REGEX_ROLE_MENTION, replaceRoles)
       .replace(REGEX_CHANNEL, replaceChannels)
       .replace(REGEX_EMOTE, replaceEmotes)
-      .replace(REGEX_COMMAND, replaceCommands);
+      .replace(REGEX_COMMAND, replaceCommands)
+      .replace(REGEX_TIMESTAMP, replaceTimestamps);
 
     if (noColor) {
       console.log(
@@ -98,7 +204,8 @@ function processMessage({
     .replace(REGEX_ROLE_MENTION, replaceRoles)
     .replace(REGEX_CHANNEL, replaceChannels)
     .replace(REGEX_EMOTE, replaceEmotes)
-    .replace(REGEX_COMMAND, replaceCommands);
+    .replace(REGEX_COMMAND, replaceCommands)
+    .replace(REGEX_TIMESTAMP, replaceTimestamps);
 
   if (
     (content.length > 1 && content.startsWith("*") && content.endsWith("*")) ||
