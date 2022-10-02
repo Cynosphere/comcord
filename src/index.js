@@ -78,8 +78,17 @@ client.once("ready", function () {
 });
 client.on("error", function () {});
 
-rpc.on("ready", function () {
+rpc.on("connected", function () {
   updatePresence();
+});
+rpc.once("ready", function () {
+  rpc.transport.on("close", async function () {
+    try {
+      await rpc.transport.connect();
+    } catch (err) {
+      rpc.transport.emit("close");
+    }
+  });
 });
 rpc.on("error", function () {});
 
