@@ -1,6 +1,7 @@
 const chalk = require("chalk");
 
 const {startPrompt} = require("../lib/prompt");
+const {updatePresence} = require("../lib/presence");
 
 function sendMode() {
   if (!comcord.state.currentChannel) {
@@ -30,6 +31,8 @@ function sendMode() {
             comcord.client.editStatus("online");
             comcord.client.editAFK(false);
             console.log("<you have returned>");
+
+            updatePresence();
           }
         } catch (err) {
           console.log("<failed to send message: " + err.message + ">");

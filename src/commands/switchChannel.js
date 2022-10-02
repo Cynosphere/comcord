@@ -1,5 +1,6 @@
 const {addCommand} = require("../lib/command");
 const {startPrompt} = require("../lib/prompt");
+const {updatePresence} = require("../lib/presence");
 
 const {listUsers} = require("./listUsers");
 
@@ -32,6 +33,8 @@ function switchChannel(input) {
     const channel = guild.channels.get(comcord.state.currentChannel);
 
     process.title = `${guild.name} - ${channel.name} - comcord`;
+
+    updatePresence();
   }
 }
 

@@ -1,4 +1,5 @@
 const {addCommand} = require("../lib/command");
+const {updatePresence} = require("../lib/presence");
 
 addCommand("A", "toggles AFK mode", function () {
   if (comcord.state.afk == true) {
@@ -12,4 +13,6 @@ addCommand("A", "toggles AFK mode", function () {
     comcord.client.editAFK(true);
     console.log("<you go AFK>");
   }
+
+  updatePresence();
 });

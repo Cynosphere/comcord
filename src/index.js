@@ -1,5 +1,8 @@
 const Eris = require("eris");
 const chalk = require("chalk");
+const DiscordRPC = require("discord-rpc");
+
+const CLIENT_ID = "1026163285877325874";
 
 const token = process.argv[2];
 
@@ -24,9 +27,12 @@ const client = new Eris("Bot " + token, {
   intents: Eris.Constants.Intents.all,
 });
 comcord.client = client;
+const rpc = new DiscordRPC.Client({transport: "ipc"});
+comcord.rpc = rpc;
 
 const {finalizePrompt} = require("./lib/prompt");
 const {processMessage, processQueue} = require("./lib/messages");
+const {updatePresence} = require("./lib/presence");
 
 require("./commands/quit");
 require("./commands/clear");
@@ -56,15 +62,26 @@ client.once("ready", function () {
 
   client.editStatus("online", [
     {
-      application_id: "1026163285877325874",
+      application_id: CLIENT_ID,
       name: "comcord",
       timestamps: {
         start: comcord.state.startTime,
       },
     },
   ]);
+
+  rpc
+    .login({
+      clientId: CLIENT_ID,
+    })
+    .catch(function () {});
 });
 client.on("error", function () {});
+
+rpc.on("ready", function () {
+  updatePresence();
+});
+rpc.on("error", function () {});
 
 client.on("messageCreate", function (msg) {
   if (msg.author.id === client.user.id) return;
