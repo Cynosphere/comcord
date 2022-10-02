@@ -335,7 +335,11 @@ function processMessage(msg, options) {
         formatMessage({
           name: msg.author.username,
           bot: msg.author.bot,
-          content: line,
+          content:
+            line +
+            (msg.editedTimestamp != null && index == lines.length - 1
+              ? " (edited)"
+              : ""),
           attachments: index == lines.length - 1 ? msg.attachments : [],
           stickers: index == lines.length - 1 ? msg.stickerItems : [],
           reply: index == 0 ? msg.referencedMessage : null,
@@ -347,7 +351,7 @@ function processMessage(msg, options) {
     formatMessage({
       name: msg.author.username,
       bot: msg.author.bot,
-      content: msg.content,
+      content: msg.content + (msg.editedTimestamp != null ? " (edited)" : ""),
       attachments: msg.attachments,
       stickers: msg.stickerItems,
       reply: msg.referencedMessage,
