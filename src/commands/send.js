@@ -24,6 +24,13 @@ function sendMode() {
             comcord.state.currentChannel,
             input
           );
+
+          if (comcord.state.afk == true) {
+            comcord.state.afk = false;
+            comcord.client.editStatus("online");
+            comcord.client.editAFK(false);
+            console.log("<you have returned>");
+          }
         } catch (err) {
           console.log("<failed to send message: " + err.message + ">");
         }

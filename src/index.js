@@ -7,12 +7,14 @@ process.title = "comcord";
 
 global.comcord = {
   state: {
+    startTime: Date.now(),
     currentGuild: null,
     currentChannel: null,
     nameLength: 2,
     inPrompt: false,
     messageQueue: [],
     lastChannel: new Map(),
+    afk: false,
   },
   commands: {},
 };
@@ -35,6 +37,7 @@ const {listGuilds} = require("./commands/listGuilds");
 require("./commands/switchGuild"); // loads listChannels and listUsers
 require("./commands/switchChannel"); //loads listUsers
 require("./commands/history"); // includes extended history
+require("./commands/afk");
 
 process.stdin.setRawMode(true);
 process.stdin.resume();
@@ -50,6 +53,16 @@ client.once("ready", function () {
   comcord.state.nameLength = client.user.username.length + 2;
 
   listGuilds();
+
+  client.editStatus("online", [
+    {
+      application_id: "1026163285877325874",
+      name: "comcord",
+      timestamps: {
+        start: comcord.state.startTime,
+      },
+    },
+  ]);
 });
 client.on("error", function () {});
 
