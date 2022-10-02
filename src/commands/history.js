@@ -17,33 +17,7 @@ async function getHistory(limit = 20) {
   console.log("--Beginning-Review".padEnd(72, "-"));
 
   for (const msg of messages) {
-    if (msg.content.indexOf("\n") > -1) {
-      const lines = msg.content.split("\n");
-      for (const index in lines) {
-        const line = lines[index];
-        processMessage({
-          name: msg.author.username,
-          bot: msg.author.bot,
-          content:
-            line +
-            (msg.editedTimestamp != null && index == lines.length - 1
-              ? " (edited)"
-              : ""),
-          attachments: index == lines.length - 1 ? msg.attachments : null,
-          reply: index == 0 ? msg.referencedMessage : null,
-          noColor: true,
-        });
-      }
-    } else {
-      processMessage({
-        name: msg.author.username,
-        bot: msg.author.bot,
-        content: msg.content + (msg.editedTimestamp != null ? " (edited)" : ""),
-        attachments: msg.attachments,
-        reply: msg.referencedMessage,
-        noColor: true,
-      });
-    }
+    processMessage(msg, {noColor: true, history: true});
   }
 
   console.log("--Review-Complete".padEnd(73, "-"));

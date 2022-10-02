@@ -1,5 +1,9 @@
 const chalk = require("chalk");
 
+const REGEX_CODEBLOCK = /```(?:([a-z0-9_+\-.]+?)\n)?\n*([^\n][^]*?)\n*```/i;
+const REGEX_CODEBLOCK_GLOBAL =
+  /```(?:([a-z0-9_+\-.]+?)\n)?\n*([^\n][^]*?)\n*```/gi;
+
 const REGEX_MENTION = /<@!?(\d+)>/g;
 const REGEX_ROLE_MENTION = /<@&?(\d+)>/g;
 const REGEX_CHANNEL = /<#(\d+)>/g;
@@ -149,7 +153,7 @@ function replaceTimestamps(_, time, format = "f") {
   return TIME_FORMATS[format](time * 1000);
 }
 
-function processMessage({
+function formatMessage({
   name,
   content,
   bot,
@@ -157,6 +161,8 @@ function processMessage({
   stickers,
   reply,
   noColor = false,
+  dump = false,
+  history = false,
 }) {
   if (name.length + 2 > comcord.state.nameLength)
     comcord.state.nameLength = name.length + 2;
@@ -165,7 +171,6 @@ function processMessage({
     const nameColor = reply.author.bot ? chalk.bold.yellow : chalk.bold.cyan;
 
     const headerLength = 5 + reply.author.username.length;
-    const length = headerLength + reply.content.length;
 
     let replyContent = reply.content.replace(/\n/g, " ");
     replyContent = replyContent
@@ -175,6 +180,14 @@ function processMessage({
       .replace(REGEX_EMOTE, replaceEmotes)
       .replace(REGEX_COMMAND, replaceCommands)
       .replace(REGEX_TIMESTAMP, replaceTimestamps);
+    if (reply.attachments.length > 0) {
+      replyContent += `<${reply.attachments.length} attachment${
+        reply.attachments.length > 1 ? "s" : ""
+      }>`;
+      replyContent = replyContent.trim();
+    }
+
+    const length = headerLength + replyContent.length;
 
     if (noColor) {
       console.log(
@@ -199,43 +212,74 @@ function processMessage({
     }
   }
 
-  content = content
-    .replace(REGEX_MENTION, replaceMentions)
-    .replace(REGEX_ROLE_MENTION, replaceRoles)
-    .replace(REGEX_CHANNEL, replaceChannels)
-    .replace(REGEX_EMOTE, replaceEmotes)
-    .replace(REGEX_COMMAND, replaceCommands)
-    .replace(REGEX_TIMESTAMP, replaceTimestamps);
-
-  if (
-    (content.length > 1 && content.startsWith("*") && content.endsWith("*")) ||
-    (content.startsWith("_") && content.endsWith("_"))
-  ) {
-    if (noColor) {
-      console.log(`<${name} ${content.substring(1, content.length - 1)}>`);
+  if (dump) {
+    if (history) {
+      const headerLength = 80 - (name.length + 5);
+      console.log(`--- ${name} ${"-".repeat(headerLength)}`);
+      console.log(content);
+      console.log(`--- ${name} ${"-".repeat(headerLength)}`);
     } else {
-      console.log(
-        chalk.bold.green(
-          `<${name} ${content.substring(1, content.length - 1)}>`
-        )
-      );
+      const wordCount = content.split(" ").length;
+      const lineCount = content.split("\n").length;
+      if (noColor) {
+        console.log(
+          `<${name} DUMPs in ${content.length} characters of ${wordCount} word${
+            wordCount > 1 ? "s" : ""
+          } in ${lineCount} line${lineCount > 1 ? "s" : ""}>`
+        );
+      } else {
+        console.log(
+          chalk.bold.yellow(
+            `<${name} DUMPs in ${
+              content.length
+            } characters of ${wordCount} word${
+              wordCount > 1 ? "s" : ""
+            } in ${lineCount} line${lineCount > 1 ? "s" : ""}>`
+          )
+        );
+      }
     }
   } else {
-    if (noColor) {
-      console.log(
-        `[${name}]${" ".repeat(
-          Math.abs(comcord.state.nameLength - (name.length + 2))
-        )} ${content}`
-      );
-    } else {
-      const nameColor = bot ? chalk.bold.yellow : chalk.bold.cyan;
+    content = content
+      .replace(REGEX_MENTION, replaceMentions)
+      .replace(REGEX_ROLE_MENTION, replaceRoles)
+      .replace(REGEX_CHANNEL, replaceChannels)
+      .replace(REGEX_EMOTE, replaceEmotes)
+      .replace(REGEX_COMMAND, replaceCommands)
+      .replace(REGEX_TIMESTAMP, replaceTimestamps);
 
-      // TODO: markdown
-      console.log(
-        nameColor(`[${name}]`) +
-          " ".repeat(Math.abs(comcord.state.nameLength - (name.length + 2))) +
-          chalk.reset(" " + content)
-      );
+    if (
+      (content.length > 1 &&
+        content.startsWith("*") &&
+        content.endsWith("*")) ||
+      (content.startsWith("_") && content.endsWith("_"))
+    ) {
+      if (noColor) {
+        console.log(`<${name} ${content.substring(1, content.length - 1)}>`);
+      } else {
+        console.log(
+          chalk.bold.green(
+            `<${name} ${content.substring(1, content.length - 1)}>`
+          )
+        );
+      }
+    } else {
+      if (noColor) {
+        console.log(
+          `[${name}]${" ".repeat(
+            Math.abs(comcord.state.nameLength - (name.length + 2))
+          )} ${content}`
+        );
+      } else {
+        const nameColor = bot ? chalk.bold.yellow : chalk.bold.cyan;
+
+        // TODO: markdown
+        console.log(
+          nameColor(`[${name}]`) +
+            " ".repeat(Math.abs(comcord.state.nameLength - (name.length + 2))) +
+            chalk.reset(" " + content)
+        );
+      }
     }
   }
 
@@ -266,33 +310,55 @@ function processMessage({
   }
 }
 
-function processQueue() {
-  for (const msg of comcord.state.messageQueue) {
-    if (msg.time) {
-      console.log(msg.content);
-    } else if (msg.content.indexOf("\n") > -1) {
+function processMessage(msg, options) {
+  if (msg.time) {
+    console.log(msg.content);
+  } else if (msg.content.indexOf("\n") > -1) {
+    if (msg.content.match(REGEX_CODEBLOCK)) {
+      formatMessage({
+        name: msg.author.username,
+        bot: msg.author.bot,
+        content: msg.content.replace(
+          REGEX_CODEBLOCK_GLOBAL,
+          (_, lang, content) => content
+        ),
+        attachments: msg.attachments,
+        stickers: msg.stickerItems,
+        reply: msg.referencedMessage,
+        dump: true,
+        ...options,
+      });
+    } else {
       const lines = msg.content.split("\n");
       for (const index in lines) {
         const line = lines[index];
-        processMessage({
+        formatMessage({
           name: msg.author.username,
           bot: msg.author.bot,
           content: line,
           attachments: index == lines.length - 1 ? msg.attachments : [],
           stickers: index == lines.length - 1 ? msg.stickerItems : [],
           reply: index == 0 ? msg.referencedMessage : null,
+          ...options,
         });
       }
-    } else {
-      processMessage({
-        name: msg.author.username,
-        bot: msg.author.bot,
-        content: msg.content,
-        attachments: msg.attachments,
-        stickers: msg.stickerItems,
-        reply: msg.referencedMessage,
-      });
     }
+  } else {
+    formatMessage({
+      name: msg.author.username,
+      bot: msg.author.bot,
+      content: msg.content,
+      attachments: msg.attachments,
+      stickers: msg.stickerItems,
+      reply: msg.referencedMessage,
+      ...options,
+    });
+  }
+}
+
+function processQueue() {
+  for (const msg of comcord.state.messageQueue) {
+    processMessage(msg);
   }
 
   comcord.state.messageQueue.splice(0, comcord.state.messageQueue.length);
@@ -301,4 +367,5 @@ function processQueue() {
 module.exports = {
   processMessage,
   processQueue,
+  formatMessage,
 };
