@@ -3,14 +3,46 @@ lockfileVersion: 5.4
 specifiers:
   chalk: 4.1.2
   discord-rpc: ^4.0.1
-  eris: github:abalabahaha/eris#dev
+  oceanic.js: ^1.1.2
 
 dependencies:
   chalk: 4.1.2
   discord-rpc: 4.0.1
-  eris: github.com/abalabahaha/eris/eb403730855714eafa36c541dbe2cb84c9979158
+  oceanic.js: 1.1.2
 
 packages:
+
+  /@discordjs/voice/0.11.0:
+    resolution: {integrity: sha512-6+9cj1dxzBJm7WJ9qyG2XZZQ8rcLl6x2caW0C0OxuTtMLAaEDntpb6lqMTFiBg/rDc4Rd59g1w0gJmib33CuHw==}
+    engines: {node: '>=16.9.0'}
+    requiresBuild: true
+    dependencies:
+      '@types/ws': 8.5.3
+      discord-api-types: 0.36.3
+      prism-media: 1.3.4
+      tslib: 2.4.0
+      ws: 8.9.0
+    transitivePeerDependencies:
+      - '@discordjs/opus'
+      - bufferutil
+      - ffmpeg-static
+      - node-opus
+      - opusscript
+      - utf-8-validate
+    dev: false
+    optional: true
+
+  /@types/node/18.8.3:
+    resolution: {integrity: sha512-0os9vz6BpGwxGe9LOhgP/ncvYN5Tx1fNcd2TM3rD/aCGBkysb+ZWpXEocG24h6ZzOi13+VB8HndAQFezsSOw1w==}
+    dev: false
+    optional: true
+
+  /@types/ws/8.5.3:
+    resolution: {integrity: sha512-6YOoWjruKj1uLf3INHH7D3qTXwFfEsg1kf3c0uDdSBJwfa/llkwIjrAGV7j7mVgGNbzTQ3HiHKKDXl6bJPD97w==}
+    dependencies:
+      '@types/node': 18.8.3
+    dev: false
+    optional: true
 
   /ansi-styles/4.3.0:
     resolution: {integrity: sha512-zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg==}
@@ -25,6 +57,13 @@ packages:
       file-uri-to-path: 1.0.0
     dev: false
     optional: true
+
+  /busboy/1.6.0:
+    resolution: {integrity: sha512-8SFQbg/0hQ9xy3UNTB0YEnsNBbWfhf7RtnzpL7TkBiTBRfrQ9Fxcnz7VJsleJpyp6rVLvXiuORqjlHi5q+PYuA==}
+    engines: {node: '>=10.16.0'}
+    dependencies:
+      streamsearch: 1.1.0
+    dev: false
 
   /chalk/4.1.2:
     resolution: {integrity: sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA==}
@@ -44,6 +83,11 @@ packages:
   /color-name/1.1.4:
     resolution: {integrity: sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==}
     dev: false
+
+  /discord-api-types/0.36.3:
+    resolution: {integrity: sha512-bz/NDyG0KBo/tY14vSkrwQ/n3HKPf87a0WFW/1M9+tXYK+vp5Z5EksawfCWo2zkAc6o7CClc0eff1Pjrqznlwg==}
+    dev: false
+    optional: true
 
   /discord-rpc/4.0.1:
     resolution: {integrity: sha512-HOvHpbq5STRZJjQIBzwoKnQ0jHplbEWFWlPDwXXKm/bILh4nzjcg7mNqll0UY7RsjFoaXA7e/oYb/4lvpda2zA==}
@@ -85,11 +129,46 @@ packages:
       whatwg-url: 5.0.0
     dev: false
 
-  /opusscript/0.0.8:
-    resolution: {integrity: sha512-VSTi1aWFuCkRCVq+tx/BQ5q9fMnQ9pVZ3JU4UHKqTkf0ED3fKEPdr+gKAAl3IA2hj9rrP6iyq3hlcJq3HELtNQ==}
-    requiresBuild: true
+  /oceanic.js/1.1.2:
+    resolution: {integrity: sha512-aABMK2UERHvyiwjWFx5m5ZZY7oPUHmVSOhICadZh/vqyxvGf48p+aqGlRu9bEtN6XZYPZJecQi/9IPN+phXn1Q==}
+    engines: {node: '>=16.16.0'}
+    dependencies:
+      undici: 5.11.0
+      ws: 8.9.0
+    optionalDependencies:
+      '@discordjs/voice': 0.11.0
+    transitivePeerDependencies:
+      - '@discordjs/opus'
+      - bufferutil
+      - ffmpeg-static
+      - node-opus
+      - opusscript
+      - utf-8-validate
+    dev: false
+
+  /prism-media/1.3.4:
+    resolution: {integrity: sha512-eW7LXORkTCQznZs+eqe9VjGOrLBxcBPXgNyHXMTSRVhphvd/RrxgIR7WaWt4fkLuhshcdT5KHL88LAfcvS3f5g==}
+    peerDependencies:
+      '@discordjs/opus': ^0.8.0
+      ffmpeg-static: ^5.0.2 || ^4.2.7 || ^3.0.0 || ^2.4.0
+      node-opus: ^0.3.3
+      opusscript: ^0.0.8
+    peerDependenciesMeta:
+      '@discordjs/opus':
+        optional: true
+      ffmpeg-static:
+        optional: true
+      node-opus:
+        optional: true
+      opusscript:
+        optional: true
     dev: false
     optional: true
+
+  /streamsearch/1.1.0:
+    resolution: {integrity: sha512-Mcc5wHehp9aXz1ax6bZUyY5afg9u2rv5cqQI3mRrYkGC8rW2hM02jWuwjtL++LS5qinSyhj2QfLyNsuc+VsExg==}
+    engines: {node: '>=10.0.0'}
+    dev: false
 
   /supports-color/7.2.0:
     resolution: {integrity: sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw==}
@@ -102,11 +181,17 @@ packages:
     resolution: {integrity: sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==}
     dev: false
 
-  /tweetnacl/1.0.3:
-    resolution: {integrity: sha512-6rt+RN7aOi1nGMyC4Xa5DdYiukl2UWCbcJft7YhxReBGQD7OAM8Pbxw6YMo4r2diNEA8FEmu32YOn9rhaiE5yw==}
-    requiresBuild: true
+  /tslib/2.4.0:
+    resolution: {integrity: sha512-d6xOpEDfsi2CZVlPQzGeux8XMwLT9hssAsaPYExaQMuYskwb+x1x7J371tWlbBdWHroy99KnVB6qIkUbs5X3UQ==}
     dev: false
     optional: true
+
+  /undici/5.11.0:
+    resolution: {integrity: sha512-oWjWJHzFet0Ow4YZBkyiJwiK5vWqEYoH7BINzJAJOLedZ++JpAlCbUktW2GQ2DS2FpKmxD/JMtWUUWl1BtghGw==}
+    engines: {node: '>=12.18'}
+    dependencies:
+      busboy: 1.6.0
+    dev: false
 
   /webidl-conversions/3.0.1:
     resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==}
@@ -132,8 +217,8 @@ packages:
         optional: true
     dev: false
 
-  /ws/8.8.1:
-    resolution: {integrity: sha512-bGy2JzvzkPowEJV++hF07hAD6niYSr0JzBNo/J29WsB57A2r7Wlc1UFcTR9IzrPvuNVO4B8LGqF8qcpsVOhJCA==}
+  /ws/8.9.0:
+    resolution: {integrity: sha512-Ja7nszREasGaYUYCI2k4lCKIRTt+y7XuqVoHR44YpI49TtryyqbqvDMn5eqfW7e6HzTukDRIsXqzVHScqRcafg==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
       bufferutil: ^4.0.1
@@ -143,21 +228,6 @@ packages:
         optional: true
       utf-8-validate:
         optional: true
-    dev: false
-
-  github.com/abalabahaha/eris/eb403730855714eafa36c541dbe2cb84c9979158:
-    resolution: {tarball: https://codeload.github.com/abalabahaha/eris/tar.gz/eb403730855714eafa36c541dbe2cb84c9979158}
-    name: eris
-    version: 0.17.2-dev
-    engines: {node: '>=10.4.0'}
-    dependencies:
-      ws: 8.8.1
-    optionalDependencies:
-      opusscript: 0.0.8
-      tweetnacl: 1.0.3
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
     dev: false
 
   github.com/devsnek/node-register-scheme/e7cc9a63a1f512565da44cb57316d9fb10750e17:

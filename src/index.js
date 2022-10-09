@@ -1,4 +1,4 @@
-const Eris = require("eris");
+const {Client} = require("oceanic.js");
 const chalk = require("chalk");
 const DiscordRPC = require("discord-rpc");
 
@@ -21,10 +21,23 @@ global.comcord = {
   },
   commands: {},
 };
-const client = new Eris("Bot " + token, {
+const client = new Client({
+  auth: "Bot " + token,
   defaultImageFormat: "png",
   defaultImageSize: 1024,
-  intents: Eris.Constants.Intents.all,
+  gateway: {
+    intents: ["ALL"],
+    activities: [
+      {
+        name: "comcord",
+        type: "GAME",
+        application_id: CLIENT_ID,
+        timestamps: {
+          start: comcord.state.startTime,
+        },
+      },
+    ],
+  },
 });
 comcord.client = client;
 const rpc = new DiscordRPC.Client({transport: "ipc"});
@@ -51,24 +64,11 @@ process.stdin.setEncoding("utf8");
 
 client.once("ready", function () {
   console.log(
-    "Logged in as: " +
-      chalk.yellow(
-        `${client.user.username}#${client.user.discriminator} (${client.user.id})`
-      )
+    "Logged in as: " + chalk.yellow(`${client.user.tag} (${client.user.id})`)
   );
   comcord.state.nameLength = client.user.username.length + 2;
 
   listGuilds();
-
-  client.editStatus("online", [
-    {
-      application_id: CLIENT_ID,
-      name: "comcord",
-      timestamps: {
-        start: comcord.state.startTime,
-      },
-    },
-  ]);
 
   rpc
     .login({

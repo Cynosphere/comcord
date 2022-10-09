@@ -8,10 +8,10 @@ async function getHistory(limit = 20) {
     return;
   }
 
-  const messages = await comcord.client.getMessages(
-    comcord.state.currentChannel,
-    {limit}
-  );
+  const messages = await comcord.client.guilds
+    .get(comcord.state.currentGuild)
+    .channels.get(comcord.state.currentChannel)
+    .getMessages({limit});
   messages.reverse();
 
   console.log("--Beginning-Review".padEnd(72, "-"));

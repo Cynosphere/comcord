@@ -10,14 +10,15 @@ A CLI-based client for Discord inspired by [SDF](https://sdf.org)'s [commode](ht
 2. `node src/index.js <token>`
 
 Currently only bot accounts are supported, and that is unlikely to change anytime soon.
-Eris has a lot of user-only endpoints implemented, but it would require hacking apart Eris to do the things nessicary to spoof being the actual client.
+~~Eris has a lot of user-only endpoints implemented, but it would require hacking apart Eris to do the things nessicary to spoof being the actual client.~~
+(I have no idea currently what the state of user support in Oceanic is)
 I also don't want to give skids an easy point of reference of how to spoof the client. :^)
 
 You **MUST** grant your bot all Privileged Gateway Intents.
 
 ## Design Decisions
 * Node.js was chosen currently due to familiarity.
-* Eris was chosen due to familiarity and the nature of everything not being abstracted out to 200 different classes unlike discord.js.
+* ~~Eris~~ Oceanic was chosen due to familiarity and the nature of everything not being abstracted out to 200 different classes unlike discord.js.
 * "Jank" by design. While I don't expect anyone to actually use comcord on serial terminals or teletypes other than for meme factor, the option is still there.
 
 ## TODO
@@ -39,11 +40,12 @@ You **MUST** grant your bot all Privileged Gateway Intents.
   - [ ] Surf channels forwards (>)
   - [ ] Surf channels backwards (<)
 - [x] Message Receiving
-  - [ ] Markdown styling
+  - [x] Markdown styling
     - [ ] Common markdown (bold, italic, etc)
     - [ ] Figure out how spoilers would work
-    - [ ] Emotes?????
-    - [ ] Timestamp parsing
+    - [x] Emotes?????
+    - [x] Timestamp parsing
+    - [x] Mentions parsing
   - [ ] Embeds in the style of commode's posted links
   - [x] Messages wrapped in `*`'s or `_`'s parsed as emotes
   - [ ] Inline DMs to replicate commode's private messages

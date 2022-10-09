@@ -13,10 +13,10 @@ addCommand("e", "emote", function () {
     } else {
       try {
         process.stdout.write("\n");
-        await comcord.client.createMessage(
-          comcord.state.currentChannel,
-          `*${input}*`
-        );
+        await comcord.client.guilds
+          .get(comcord.state.currentGuild)
+          .channels.get(comcord.state.currentChannel)
+          .createMessage({content: `*${input}*`});
         console.log(`<${comcord.client.user.username} ${input}>`);
       } catch (err) {
         console.log("<failed to send message: " + err.message + ">");

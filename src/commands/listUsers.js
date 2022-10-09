@@ -39,12 +39,12 @@ function listUsers() {
     `\n[you are in '${guild.name}' in '${channel.name}' among ${guild.memberCount}]\n`
   );
 
-  const online = [...guild.members.values()].filter((m) => m.status);
+  const online = [...guild.members.values()].filter((m) => m.presence);
   online.sort((a, b) => a.name - b.name);
 
   let longest = 0;
   for (const member of online) {
-    const name = member.user.username + "#" + member.user.discriminator;
+    const name = member.user.tag;
     if (name.length + 3 > longest) longest = name.length + 3;
   }
 
@@ -52,8 +52,8 @@ function listUsers() {
 
   let index = 0;
   for (const member of online) {
-    const name = member.user.username + "#" + member.user.discriminator;
-    const status = getStatus(member.status);
+    const name = member.user.tag;
+    const status = getStatus(member.presence.status);
     const nameAndStatus = chalk.reset(name) + status;
 
     index++;

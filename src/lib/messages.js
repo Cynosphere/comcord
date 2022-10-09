@@ -181,7 +181,7 @@ function formatMessage({
       .replace(REGEX_COMMAND, replaceCommands)
       .replace(REGEX_TIMESTAMP, replaceTimestamps);
     if (reply.attachments.length > 0) {
-      replyContent += `<${reply.attachments.length} attachment${
+      replyContent += ` <${reply.attachments.length} attachment${
         reply.attachments.length > 1 ? "s" : ""
       }>`;
       replyContent = replyContent.trim();
@@ -284,7 +284,7 @@ function formatMessage({
   }
 
   if (attachments) {
-    for (const attachment of attachments) {
+    for (const attachment of attachments.values()) {
       if (noColor) {
         console.log(`<attachment: ${attachment.url} >`);
       } else {

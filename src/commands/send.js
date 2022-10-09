@@ -21,10 +21,10 @@ function sendMode() {
       } else {
         try {
           process.stdout.write("\n");
-          await comcord.client.createMessage(
-            comcord.state.currentChannel,
-            input
-          );
+          await comcord.client.guilds
+            .get(comcord.state.currentGuild)
+            .channels.get(comcord.state.currentChannel)
+            .createMessage({content: input});
 
           if (comcord.state.afk == true) {
             comcord.state.afk = false;
