@@ -81,12 +81,22 @@ client.on("error", function () {});
 rpc.on("connected", function () {
   updatePresence();
 });
+let retryingRPC = false;
 rpc.once("ready", function () {
-  rpc.transport.on("close", async function () {
-    try {
-      await rpc.transport.connect();
-    } catch (err) {
-      rpc.transport.emit("close");
+  rpc.transport.on("close", function () {
+    if (!retryingRPC) {
+      retryingRPC = true;
+      setTimeout(function () {
+        rpc.transport
+          .connect()
+          .then(() => {
+            retryingRPC = false;
+          })
+          .catch((err) => {
+            retryingRPC = false;
+            rpc.transport.emit("close");
+          });
+      }, 5000);
     }
   });
 });
