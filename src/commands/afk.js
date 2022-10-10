@@ -3,6 +3,7 @@ const {updatePresence} = require("../lib/presence");
 
 addCommand("A", "toggles AFK mode", function () {
   if (comcord.state.afk == true) {
+    comcord.state.afk = false;
     comcord.client.shards.forEach((shard) => (shard.presence.afk = false));
     comcord.client.editStatus("online");
     console.log("<you have returned>");

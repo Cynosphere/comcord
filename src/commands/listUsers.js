@@ -40,21 +40,22 @@ function listUsers() {
   );
 
   const online = [...guild.members.values()].filter((m) => m.presence);
-  online.sort((a, b) => a.name - b.name);
+  online.sort((a, b) => a.tag.localeCompare(b.tag));
 
   let longest = 0;
   for (const member of online) {
-    const name = member.user.tag;
+    const name = member.tag;
     if (name.length + 3 > longest) longest = name.length + 3;
   }
 
-  const columns = Math.ceil(process.stdout.columns / longest);
+  const columns = Math.floor(process.stdout.columns / longest);
 
   let index = 0;
   for (const member of online) {
-    const name = member.user.tag;
+    const name = member.tag;
     const status = getStatus(member.presence.status);
-    const nameAndStatus = chalk.reset(name) + status;
+    const nameAndStatus =
+      (member.user.bot ? chalk.yellow(name) : chalk.reset(name)) + status;
 
     index++;
     process.stdout.write(

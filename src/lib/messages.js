@@ -155,6 +155,7 @@ function replaceTimestamps(_, time, format = "f") {
 
 function formatMessage({
   name,
+  tag,
   content,
   bot,
   attachments,
@@ -163,6 +164,7 @@ function formatMessage({
   noColor = false,
   dump = false,
   history = false,
+  dm = false,
 }) {
   if (name.length + 2 > comcord.state.nameLength)
     comcord.state.nameLength = name.length + 2;
@@ -248,7 +250,15 @@ function formatMessage({
       .replace(REGEX_COMMAND, replaceCommands)
       .replace(REGEX_TIMESTAMP, replaceTimestamps);
 
-    if (
+    if (dm) {
+      if (noColor) {
+        console.log(`*${tag}* ${content}\x07`);
+      } else {
+        console.log(
+          chalk.bold.red(`*${tag}*`) + chalk.reset(" " + content + "\x07")
+        );
+      }
+    } else if (
       (content.length > 1 &&
         content.startsWith("*") &&
         content.endsWith("*")) ||
@@ -310,13 +320,18 @@ function formatMessage({
   }
 }
 
-function processMessage(msg, options) {
+function processMessage(msg, options = {}) {
+  if (msg.channel?.recipient) {
+    options.dm = true;
+  }
+
   if (msg.time) {
     console.log(msg.content);
   } else if (msg.content.indexOf("\n") > -1) {
     if (msg.content.match(REGEX_CODEBLOCK)) {
       formatMessage({
         name: msg.author.username,
+        tag: msg.author.tag,
         bot: msg.author.bot,
         content: msg.content.replace(
           REGEX_CODEBLOCK_GLOBAL,
@@ -334,6 +349,7 @@ function processMessage(msg, options) {
         const line = lines[index];
         formatMessage({
           name: msg.author.username,
+          tag: msg.author.tag,
           bot: msg.author.bot,
           content:
             line +
@@ -350,6 +366,7 @@ function processMessage(msg, options) {
   } else {
     formatMessage({
       name: msg.author.username,
+      tag: msg.author.tag,
       bot: msg.author.bot,
       content: msg.content + (msg.editedTimestamp != null ? " (edited)" : ""),
       attachments: msg.attachments,

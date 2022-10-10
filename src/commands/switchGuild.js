@@ -56,3 +56,5 @@ function switchGuild(input) {
 addCommand("G", "goto guild", function () {
   startPrompt(":guild> ", switchGuild);
 });
+
+module.exports = {switchGuild};

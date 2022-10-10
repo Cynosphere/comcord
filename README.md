@@ -8,17 +8,24 @@ A CLI-based client for Discord inspired by [SDF](https://sdf.org)'s [commode](ht
 ## Usage
 1. `pnpm i`
 2. `node src/index.js <token>`
+Your token will be then stored in `.comcordrc` after the first launch.
 
-Currently only bot accounts are supported, and that is unlikely to change anytime soon.
-~~Eris has a lot of user-only endpoints implemented, but it would require hacking apart Eris to do the things nessicary to spoof being the actual client.~~
-(I have no idea currently what the state of user support in Oceanic is)
-I also don't want to give skids an easy point of reference of how to spoof the client. :^)
+### User Accounts
+User accounts are *partially* supported via `allowUserAccounts=true` in your `.comcordrc`.
+This is use at your own risk, despite spoofing the official client. I am not responsible for any banned accounts.
 
+#### Guild members not populating
+This is due to Oceanic not implementing Lazy Guilds as they are user account specific. **DO NOT bother Oceanic to implement it!** They are purely a bot-focused library.
+
+If you are willing to implement Lazy Guilds based off of [unofficial documentation](https://luna.gitlab.io/discord-unofficial-docs/lazy_guilds.html)
+and my already existing horrible hacks to make user accounts work in the first place, feel free to send a PR (on GitLab, GitHub repo is a read only mirror).
+
+### Bot Accounts (prefered)
 You **MUST** grant your bot all Privileged Gateway Intents.
 
 ## Design Decisions
 * Node.js was chosen currently due to familiarity.
-* ~~Eris~~ Oceanic was chosen due to familiarity and the nature of everything not being abstracted out to 200 different classes unlike discord.js.
+* Oceanic was chosen due to familiarity and the nature of everything not being abstracted out to 200 different classes unlike discord.js.
 * "Jank" by design. While I don't expect anyone to actually use comcord on serial terminals or teletypes other than for meme factor, the option is still there.
 
 ## TODO
@@ -39,6 +46,9 @@ You **MUST** grant your bot all Privileged Gateway Intents.
   - [x] Clear (c)
   - [ ] Surf channels forwards (>)
   - [ ] Surf channels backwards (<)
+  - [x] AFK toggle (A)
+  - [x] Send DM (s)
+  - [x] Answer DM (a)
 - [x] Message Receiving
   - [x] Markdown styling
     - [ ] Common markdown (bold, italic, etc)
@@ -54,8 +64,9 @@ You **MUST** grant your bot all Privileged Gateway Intents.
   - [x] Puts incoming messages into queue whilst in send mode
   - [ ] Mentions
   - [ ] Replies
-- [ ] Configuration
-  - [ ] Default guild/channel
+- [x] Configuration
+  - [x] Default guild/channel
+    - No way to set in client (yet?), `defaultChannel=` and `defaultGuild=` in your `.comcordrc`.
 - [ ] Threads
-- [ ] Not have the token just be in argv
+- [x] Not have the token just be in argv
 - [x] Not have everything in one file
