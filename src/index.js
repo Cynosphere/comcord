@@ -204,7 +204,7 @@ client.on("messageUpdate", async function (msg, old) {
       comcord.state.currentChannel ||
     msg.channel?.recipient != null
   ) {
-    if (msg.content == old.content) return;
+    if (old && msg.content == old.content) return;
 
     if (comcord.state.inPrompt) {
       comcord.state.messageQueue.push(msg);

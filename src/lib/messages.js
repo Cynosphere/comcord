@@ -327,7 +327,7 @@ function processMessage(msg, options = {}) {
 
   if (msg.time) {
     console.log(msg.content);
-  } else if (msg.content.indexOf("\n") > -1) {
+  } else if (msg.content && msg.content.indexOf("\n") > -1) {
     if (msg.content.match(REGEX_CODEBLOCK)) {
       formatMessage({
         name: msg.author.username,
