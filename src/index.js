@@ -380,6 +380,7 @@ setInterval(function () {
     } else {
       console.log(timeString);
     }
+    comcord.state.nameLength = client.user.username.length + 2;
     sentTime = true;
   } else if (seconds > 2 && sentTime) {
     sentTime = false;

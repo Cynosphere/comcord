@@ -182,9 +182,9 @@ function formatMessage({
       .replace(REGEX_EMOTE, replaceEmotes)
       .replace(REGEX_COMMAND, replaceCommands)
       .replace(REGEX_TIMESTAMP, replaceTimestamps);
-    if (reply.attachments.length > 0) {
-      replyContent += ` <${reply.attachments.length} attachment${
-        reply.attachments.length > 1 ? "s" : ""
+    if (reply.attachments.size > 0) {
+      replyContent += ` <${reply.attachments.size} attachment${
+        reply.attachments.size > 1 ? "s" : ""
       }>`;
       replyContent = replyContent.trim();
     }
