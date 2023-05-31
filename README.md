@@ -59,7 +59,7 @@ You **MUST** grant your bot all Privileged Gateway Intents.
     - [x] Mentions parsing
   - [ ] Embeds in the style of commode's posted links
   - [x] Messages wrapped in `*`'s or `_`'s parsed as emotes
-  - [ ] Inline DMs to replicate commode's private messages
+  - [x] Inline DMs to replicate commode's private messages
   - [x] Replies
 - [x] Message sending
   - [x] Puts incoming messages into queue whilst in send mode
