@@ -39,12 +39,13 @@ function listUsers() {
     `\n[you are in '${guild.name}' in '${channel.name}' among ${guild.memberCount}]\n`
   );
 
-  const online = [...guild.members.values()].filter((m) => m.presence);
-  online.sort((a, b) => a.tag.localeCompare(b.tag));
+  const online = Array.from(guild.members.values()).filter((m) => m.status);
+  online.sort((a, b) => a.username.localeCompare(b.username));
 
   let longest = 0;
   for (const member of online) {
-    const name = member.tag;
+    // FIXME: remove discrim stuff after username migration finished
+    const name = member.username;
     if (name.length + 3 > longest) longest = name.length + 3;
   }
 
@@ -52,8 +53,8 @@ function listUsers() {
 
   let index = 0;
   for (const member of online) {
-    const name = member.tag;
-    const status = getStatus(member.presence.status);
+    const name = member.username;
+    const status = getStatus(member.status);
     const nameAndStatus =
       (member.user.bot ? chalk.yellow(name) : chalk.reset(name)) + status;
 

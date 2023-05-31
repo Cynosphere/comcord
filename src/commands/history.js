@@ -8,10 +8,10 @@ async function getHistory(limit = 20) {
     return;
   }
 
-  const messages = await comcord.client.guilds
-    .get(comcord.state.currentGuild)
-    .channels.get(comcord.state.currentChannel)
-    .getMessages({limit});
+  const messages = await comcord.client.getMessages(
+    comcord.state.currentChannel,
+    {limit}
+  );
   messages.reverse();
 
   console.log("--Beginning-Review".padEnd(72, "-"));
@@ -33,7 +33,7 @@ async function getExtendedHistory(input) {
   try {
     await getHistory(input);
   } catch (err) {
-    console.log("<failed to get history: " + err.message + ">");
+    console.log(`<failed to get history: ${err.message}>`);
   }
 }
 

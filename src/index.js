@@ -1,13 +1,14 @@
-const {Client, Constants} = require("oceanic.js");
+const {Client, Constants, Channel} = require("@projectdysnomia/dysnomia");
 const DiscordRPC = require("discord-rpc");
 const chalk = require("chalk");
 const fs = require("fs");
+const os = require("os");
 
 const rcfile = require("./lib/rcfile");
 const config = {};
 
 if (fs.existsSync(rcfile.path)) {
-  console.log("% Reading " + rcfile.path + " ...");
+  console.log(`% Reading ${rcfile.path.replace(os.homedir(), "~")} ...`);
   rcfile.readFile(config);
 }
 
@@ -42,31 +43,19 @@ global.comcord = {
   },
   commands: {},
 };
-const client = new Client({
-  auth:
-    (config.allowUserAccounts == "true" ? "" : "Bot ") +
-    (token ?? config.token),
-  defaultImageFormat: "png",
-  defaultImageSize: 1024,
-  gateway: {
-    intents: ["ALL"],
-    maxShards: 1,
-    concurrency: 1,
-    presence: {
-      status: "online",
-      activities: [
-        {
-          name: "comcord",
-          type: 0,
-          application_id: CLIENT_ID,
-          timestamps: {
-            start: comcord.state.startTime,
-          },
-        },
-      ],
+const client = new Client(
+  (config.allowUserAccounts == "true" ? "" : "Bot ") + (token ?? config.token),
+  {
+    defaultImageFormat: "png",
+    defaultImageSize: 1024,
+    gateway: {
+      intents: Object.values(Constants.Intents),
     },
-  },
-});
+    allowedMentions: {
+      everyone: false,
+    },
+  }
+);
 comcord.client = client;
 const rpc = new DiscordRPC.Client({transport: "ipc"});
 comcord.rpc = rpc;
@@ -93,7 +82,8 @@ process.stdin.setEncoding("utf8");
 
 client.once("ready", function () {
   console.log(
-    "Logged in as: " + chalk.yellow(`${client.user.tag} (${client.user.id})`)
+    "Logged in as: " +
+      chalk.yellow(`${client.user.username} (${client.user.id})`)
   );
   comcord.state.nameLength = client.user.username.length + 2;
 
@@ -135,6 +125,7 @@ rpc.on("connected", function () {
 });
 let retryingRPC = false;
 rpc.once("ready", function () {
+  rpc.transport.on("error", function () {});
   rpc.transport.on("close", function () {
     comcord.state.rpcConnected = false;
     if (!retryingRPC) {
@@ -158,20 +149,19 @@ rpc.on("error", function () {});
 client.on("messageCreate", async function (msg) {
   if (msg.author.id === client.user.id) return;
 
-  if (msg.channelID && !msg.channel) {
-    try {
-      const dmChannel = await msg.author.createDM();
-      if (dmChannel.id === msg.channelID) {
-        msg.channel = dmChannel;
-      }
-    } catch {
-      //
-    }
+  if (
+    !(msg.channel instanceof Channel) &&
+    msg.author.id != client.user.id &&
+    !msg.guildID
+  ) {
+    const newChannel = await client.getDMChannel(msg.author.id);
+    if (msg.channel.id == newChannel.id) msg.channel = newChannel;
   }
 
+  if (!(msg.channel instanceof Channel)) return;
+
   if (
-    (msg.channel ? msg.channel.id : msg.channelID) ==
-      comcord.state.currentChannel ||
+    msg.channel.id == comcord.state.currentChannel ||
     msg.channel?.recipient != null
   ) {
     if (comcord.state.inPrompt) {
@@ -188,20 +178,19 @@ client.on("messageCreate", async function (msg) {
 client.on("messageUpdate", async function (msg, old) {
   if (msg.author.id === client.user.id) return;
 
-  if (msg.channelID && !msg.channel) {
-    try {
-      const dmChannel = await msg.author.createDM();
-      if (dmChannel.id === msg.channelID) {
-        msg.channel = dmChannel;
-      }
-    } catch {
-      //
-    }
+  if (
+    !(msg.channel instanceof Channel) &&
+    msg.author.id != client.user.id &&
+    !msg.guildID
+  ) {
+    const newChannel = await client.getDMChannel(msg.author.id);
+    if (msg.channel.id == newChannel.id) msg.channel = newChannel;
   }
 
+  if (!(msg.channel instanceof Channel)) return;
+
   if (
-    (msg.channel ? msg.channel.id : msg.channelID) ==
-      comcord.state.currentChannel ||
+    msg.channel.id == comcord.state.currentChannel ||
     msg.channel?.recipient != null
   ) {
     if (old && msg.content == old.content) return;
@@ -253,7 +242,10 @@ if (
   config.allowUserAccounts == "true" &&
   !(token ?? config.token).startsWith("Bot ")
 ) {
-  if (fetch == null) {
+  console.log("User account support pending rewrite.");
+  process.exit(1);
+
+  /*if (fetch == null) {
     console.log("Node v18+ needed for user account support.");
     process.exit(1);
   }
@@ -269,14 +261,6 @@ if (
 
     const newConnect = new client.connect.constructor(connectLines.join("\n"));
     client.connect = newConnect.bind(client);
-
-    // gross hack
-    global.Constants_1 = Constants;
-    try {
-      global.Erlpack = require("erlpack");
-    } catch {
-      global.Erlpack = false;
-    }
 
     console.log("% Injecting headers into request handler");
     client.rest.handler.options.userAgent = `Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/${superProperties.client_version} Chrome/91.0.4472.164 Electron/13.6.6 Safari/537.36`;
@@ -328,7 +312,7 @@ if (
 
     console.log("% Connecting to gateway now");
     await client.connect();
-  })();
+  })();*/
 } else {
   client.connect();
 }

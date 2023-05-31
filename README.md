@@ -8,14 +8,15 @@ A CLI-based client for Discord inspired by [SDF](https://sdf.org)'s [commode](ht
 ## Usage
 1. `pnpm i`
 2. `node src/index.js <token>`
+
 Your token will be then stored in `.comcordrc` after the first launch.
 
 ### User Accounts
-User accounts are *partially* supported via `allowUserAccounts=true` in your `.comcordrc`.
+User accounts are _partially_ supported via `allowUserAccounts=true` in your `.comcordrc`.
 This is use at your own risk, despite spoofing the official client. I am not responsible for any banned accounts.
 
 #### Guild members not populating
-This is due to Oceanic not implementing Lazy Guilds as they are user account specific. **DO NOT bother Oceanic to implement it!** They are purely a bot-focused library.
+This is due to most libraries not implementing Lazy Guilds, as bots do not need lazy guilds to function.
 
 If you are willing to implement Lazy Guilds based off of [unofficial documentation](https://luna.gitlab.io/discord-unofficial-docs/lazy_guilds.html)
 and my already existing horrible hacks to make user accounts work in the first place, feel free to send a PR (on GitLab, GitHub repo is a read only mirror).
@@ -24,9 +25,9 @@ and my already existing horrible hacks to make user accounts work in the first p
 You **MUST** grant your bot all Privileged Gateway Intents.
 
 ## Design Decisions
-* Node.js was chosen currently due to familiarity.
-* Oceanic was chosen due to familiarity and the nature of everything not being abstracted out to 200 different classes unlike discord.js.
-* "Jank" by design. While I don't expect anyone to actually use comcord on serial terminals or teletypes other than for meme factor, the option is still there.
+- Node.js was chosen currently due to familiarity.
+- Dysnomia was chosen due to familiarity and the nature of everything not being abstracted out to 200 different classes unlike discord.js.
+- "Jank" by design. While I don't expect anyone to actually use comcord on serial terminals or teletypes other than for meme factor, the option is still there.
 
 ## TODO
 - [x] Commands
@@ -70,3 +71,7 @@ You **MUST** grant your bot all Privileged Gateway Intents.
 - [ ] Threads
 - [x] Not have the token just be in argv
 - [x] Not have everything in one file
+
+## Repository
+If you're viewing this on GitHub or GitLab, you are viewing a read only mirror.
+The main repository is located on [Gitdab](https://gitdab.com/Cynosphere/comcord) and is push mirrored to the other two.

@@ -15,7 +15,7 @@ function updatePresence() {
         const activity = {
           startTimestamp: comcord.state.startTime,
           smallImageKey: `https://cdn.discordapp.com/avatars/${comcord.client.user.id}/${comcord.client.user.avatar}.png?size=1024`,
-          smallImageText: comcord.client.user.tag,
+          smallImageText: comcord.client.user.username,
           buttons: [
             {
               label: "comcord Repo",
@@ -39,6 +39,17 @@ function updatePresence() {
         //
       }
     }
+
+    comcord.client.editStatus(comcord.state.afk ? "idle" : "online", [
+      {
+        name: "comcord",
+        type: 0,
+        application_id: CLIENT_ID,
+        timestamps: {
+          start: comcord.state.startTime,
+        },
+      },
+    ]);
   } else {
     const activity = {
       application_id: CLIENT_ID,
@@ -65,12 +76,9 @@ function updatePresence() {
       activity.state = "AFK";
     }
 
-    comcord.client.shards.forEach((shard) => {
-      if (shard.ready) {
-        shard.presence.activities = [activity];
-        shard.sendPresenceUpdate();
-      }
-    });
+    comcord.client.editStatus(comcord.state.afk ? "idle" : "online", [
+      activity,
+    ]);
   }
 }
 

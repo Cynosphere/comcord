@@ -7,7 +7,9 @@ function listGuilds() {
   for (const guild of comcord.client.guilds.values()) {
     if (guild.name.length > longest) longest = guild.name.length;
 
-    const online = [...guild.members.values()].filter((m) => m.presence).length;
+    const online = Array.from(guild.members.values()).filter(
+      (m) => m.status
+    ).length;
     guilds.push({name: guild.name, members: guild.memberCount, online});
   }
 

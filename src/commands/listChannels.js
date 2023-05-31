@@ -8,12 +8,14 @@ function listChannels() {
 
   let longest = 0;
   const guild = comcord.client.guilds.get(comcord.state.currentGuild);
-  const channels = [...guild.channels.values()].filter((c) => c.type == 0);
+  const channels = Array.from(guild.channels.values()).filter(
+    (c) => c.type == 0 || c.type == 5
+  );
   channels.sort((a, b) => a.position - b.position);
 
   for (const channel of channels) {
     const perms = channel.permissionsOf(comcord.client.user.id);
-    const private = !perms.has("VIEW_CHANNEL");
+    const private = !perms.has("readMessageHistory");
 
     if (channel.name.length + (private ? 1 : 0) > longest)
       longest = Math.min(25, channel.name.length + (private ? 1 : 0));
@@ -26,7 +28,7 @@ function listChannels() {
     const topic =
       channel.topic != null ? channel.topic.replace(/\n/g, " ") : "";
     const perms = channel.permissionsOf(comcord.client.user.id);
-    const private = !perms.has("VIEW_CHANNEL");
+    const private = !perms.has("viewChannel");
 
     const name = (private ? "*" : "") + channel.name;
 
