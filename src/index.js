@@ -109,7 +109,7 @@ client.once("ready", function () {
     }
   }
 
-  if (client.user.bot) {
+  if (client.user.bot && !config.disableRPC) {
     rpc
       .login({
         clientId: CLIENT_ID,
