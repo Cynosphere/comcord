@@ -51,7 +51,7 @@ async function getBuildNumber() {
   return buildNumber;
 }
 
-async function getClientVersion() {
+/*async function getClientVersion() {
   if (comcord.state.cachedClientVersion) {
     return comcord.state.cachedClientVersion;
   }
@@ -63,15 +63,43 @@ async function getClientVersion() {
   comcord.state.cachedClientVersion = clientVersion;
 
   return clientVersion;
+}*/
+
+async function getBrowserInfo() {
+  let targetOS;
+  switch (process.platform) {
+    case "win32":
+    default:
+      targetOS = "windows";
+      break;
+    case "darwin":
+      targetOS = "mac os";
+      break;
+    case "linux":
+      targetOS = "linux";
+      break;
+  }
+
+  const data = await fetch(
+    `https://cdn.jsdelivr.net/gh/ray-lothian/UserAgent-Switcher/v2/firefox/data/popup/browsers/firefox-${encodeURIComponent(
+      targetOS
+    )}.json`
+  ).then((res) => res.json());
+  data.sort((a, b) => Number(b.browser.major) - Number(a.browser.major));
+  const target = data[0];
+
+  return {ua: target.ua, version: target.browser.version};
 }
 
 async function getSuperProperties() {
   const buildNumber = await getBuildNumber();
-  const clientVersion = await getClientVersion();
+  // const clientVersion = await getClientVersion();
+  const browserInfo = await getBrowserInfo();
 
   let _os;
   switch (process.platform) {
     case "win32":
+    default:
       _os = "Windows";
       break;
     case "darwin":
@@ -80,28 +108,26 @@ async function getSuperProperties() {
     case "linux":
       _os = "Linux";
       break;
-    default:
-      _os = process.platform;
   }
 
   const props = {
-    os: _os,
-    browser: "Discord Client",
-    releaseChannel: "stable",
-    client_version: clientVersion,
-    os_version: os.release(),
-    os_arch: os.arch(),
-    system_locale: "en-US",
+    browser: "Firefox",
+    browser_user_agent: browserInfo.ua,
+    browser_version: browserInfo.version,
     client_build_number: buildNumber,
     client_event_source: null,
+    device: "",
+    os: _os,
+    os_version: os.release(),
+    //os_arch: os.arch(),
+    referrer: "",
+    referrer_current: "",
+    referring_domain: "",
+    referring_domain_current: "",
+    release_channel: "stable",
+    system_locale: "en-US",
   };
   return props;
 }
 
-async function getSuperPropertiesBase64() {
-  return Buffer.from(JSON.stringify(await getSuperProperties())).toString(
-    "base64"
-  );
-}
-
-module.exports = {getSuperProperties, getSuperPropertiesBase64};
+module.exports = {getSuperProperties};

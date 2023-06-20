@@ -83,9 +83,9 @@ process.stdin.setEncoding("utf8");
 client.once("ready", function () {
   console.log(
     "Logged in as: " +
-      chalk.yellow(`${client.user.username} (${client.user.id})`)
+      chalk.yellow(`${client.user?.username} (${client.user?.id})`)
   );
-  comcord.state.nameLength = client.user.username.length + 2;
+  comcord.state.nameLength = (client.user?.username?.length ?? 0) + 2;
 
   listGuilds();
 
@@ -242,10 +242,7 @@ if (
   config.allowUserAccounts == "true" &&
   !(token ?? config.token).startsWith("Bot ")
 ) {
-  console.log("User account support pending rewrite.");
-  process.exit(1);
-
-  /*if (fetch == null) {
+  if (fetch == null) {
     console.log("Node v18+ needed for user account support.");
     process.exit(1);
   }
@@ -253,48 +250,78 @@ if (
   (async function () {
     comcord.clientSpoof = require("./lib/clientSpoof");
     const superProperties = await comcord.clientSpoof.getSuperProperties();
+    comcord.clientSpoof.superProperties = superProperties;
+    comcord.clientSpoof.superPropertiesBase64 = Buffer.from(
+      JSON.stringify(superProperties)
+    ).toString("base64");
 
-    console.log("% Allowing non-bot tokens to connect");
-    const connectLines = client.connect.toString().split("\n");
-    connectLines.splice(0, 4);
-    connectLines.splice(-1, 1);
+    // FIXME: is there a way we can string patch functions without having to
+    //        dump locals into global
+    global.MultipartData = require("@projectdysnomia/dysnomia/lib/util/MultipartData.js");
+    global.SequentialBucket = require("@projectdysnomia/dysnomia/lib/util/SequentialBucket.js");
+    global.DiscordHTTPError = require("@projectdysnomia/dysnomia/lib/errors/DiscordHTTPError.js");
+    global.DiscordRESTError = require("@projectdysnomia/dysnomia/lib/errors/DiscordRESTError.js");
+    global.Zlib = require("node:zlib");
+    global.HTTPS = require("node:https");
+    global.HTTP = require("node:http");
+    global.GatewayOPCodes = Constants.GatewayOPCodes;
+    global.GATEWAY_VERSION = Constants.GATEWAY_VERSION;
 
-    const newConnect = new client.connect.constructor(connectLines.join("\n"));
-    client.connect = newConnect.bind(client);
+    client.getGateway = async function getGateway() {
+      return {url: "wss://gateway.discord.gg"};
+    };
 
     console.log("% Injecting headers into request handler");
-    client.rest.handler.options.userAgent = `Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/${superProperties.client_version} Chrome/91.0.4472.164 Electron/13.6.6 Safari/537.36`;
-    client.rest.handler._request = client.rest.handler.request.bind(
-      client.rest.handler
-    );
-    client.rest.handler.request = async function (options) {
-      options.headers = options.headers ?? {};
-      options.headers["X-Super-Properties"] =
-        await comcord.clientSpoof.getSuperPropertiesBase64();
+    client.requestHandler.userAgent = superProperties.browser_user_agent;
+    const requestFunction = client.requestHandler.request.toString();
+    const newRequest = requestFunction
+      .replace(
+        "this.userAgent,",
+        'this.userAgent,\n"X-Super-Properties":comcord.clientSpoof.superPropertiesBase64,'
+      )
+      .replace("._token", '._token.replace("Bot ","")');
+    if (requestFunction === newRequest)
+      throw new Error("Failed to patch request");
+    client.requestHandler.request = new Function(
+      "method",
+      "url",
+      "auth",
+      "body",
+      "file",
+      "_route",
+      "short",
+      `return (function ${newRequest}).apply(this,arguments)`
+    ).bind(client.requestHandler);
 
-      return await this._request.apply(this, [options]);
-    }.bind(client.rest.handler);
-
-    console.log("% Setting gateway connection properties");
-    client.shards.options.connectionProperties = superProperties;
-
-    console.log("% Injecting application into READY payload");
+    console.log("% Injecting shard spawning");
     client.shards._spawn = client.shards.spawn.bind(client.shards);
     client.shards.spawn = function (id) {
       const res = this._spawn.apply(this, [id]);
       const shard = this.get(id);
       if (shard) {
-        shard._onDispatch = shard.onDispatch.bind(shard);
-        shard.onDispatch = async function (packet) {
+        const identifyFunction = shard.identify.toString();
+        const newIdentify = identifyFunction
+          .replace(
+            /properties: {\n\s+.+?\n\s+.+?\n\s+.+?\n\s+}\n/,
+            "properties: comcord.clientSpoof.superProperties\n"
+          )
+          .replace(/\s+intents: this.client.shards.options.intents,/, "");
+        if (identifyFunction === newIdentify)
+          throw new Error("Failed to patch identify");
+        shard.identify = new Function(
+          `(function ${newIdentify}).apply(this, arguments)`
+        );
+        shard._wsEvent = shard.wsEvent;
+        shard.wsEvent = function (packet) {
           if (packet.t == "READY") {
             packet.d.application = {id: CLIENT_ID, flags: 565248};
           }
 
-          const ret = await this._onDispatch.apply(this, [packet]);
+          const ret = this._wsEvent.apply(this, [packet]);
 
           if (packet.t == "READY") {
             for (const guild of packet.d.guilds) {
-              await this._onDispatch.apply(this, [
+              this._wsEvent.apply(this, [
                 {
                   t: "GUILD_CREATE",
                   d: guild,
@@ -304,15 +331,15 @@ if (
           }
 
           return ret;
-        }.bind(shard);
+        };
       }
 
       return res;
-    }.bind(client.shards);
+    };
 
     console.log("% Connecting to gateway now");
     await client.connect();
-  })();*/
+  })();
 } else {
   client.connect();
 }
@@ -364,7 +391,7 @@ setInterval(function () {
     } else {
       console.log(timeString);
     }
-    comcord.state.nameLength = client.user.username.length + 2;
+    comcord.state.nameLength = (client.user?.username?.length ?? 0) + 2;
     sentTime = true;
   } else if (seconds > 2 && sentTime) {
     sentTime = false;
