@@ -267,6 +267,7 @@ client.on("messageReactionAdd", async function (msg, emoji, reactor) {
     referencedMessage: reply,
     author: reactor?.user ?? client.users.get(reactor.id),
     timestamp: Date.now(),
+    mentions: [],
     content: `*reacted with ${emoji.id ? `:${emoji.name}:` : emoji.name}*`,
   };
 

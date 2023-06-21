@@ -1,15 +1,16 @@
 const {addCommand} = require("../lib/command");
 const {startPrompt} = require("../lib/prompt");
 const {processMessage} = require("../lib/messages");
+const {listChannels} = require("./listChannels");
 
-async function getHistory(limit = 20) {
-  if (!comcord.state.currentChannel) {
+async function getHistory(limit = 20, channel = null) {
+  if (!channel && !comcord.state.currentChannel) {
     console.log("<not in a channel>");
     return;
   }
 
   const messages = await comcord.client.getMessages(
-    comcord.state.currentChannel,
+    channel ?? comcord.state.currentChannel,
     {limit}
   );
   messages.reverse();
@@ -42,5 +43,37 @@ addCommand("R", "extended history", function () {
   startPrompt(":lines> ", async function (input) {
     process.stdout.write("\n");
     await getExtendedHistory(input);
+  });
+});
+addCommand("p", "peek at channel", function () {
+  if (!comcord.state.currentGuild) {
+    console.log("<not in a guild>");
+    return;
+  }
+
+  listChannels();
+  startPrompt(":peek> ", async function (input) {
+    console.log("");
+    if (input == "") {
+      return;
+    }
+    let target;
+
+    const guild = comcord.client.guilds.get(comcord.state.currentGuild);
+    const channels = [...guild.channels.values()].filter((c) => c.type == 0);
+    channels.sort((a, b) => a.position - b.position);
+
+    for (const channel of channels) {
+      if (channel.name.toLowerCase().indexOf(input.toLowerCase()) > -1) {
+        target = channel.id;
+        break;
+      }
+    }
+
+    if (target == null) {
+      console.log("<channel not found>");
+    } else {
+      await getHistory(20, target);
+    }
   });
 });
