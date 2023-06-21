@@ -40,16 +40,19 @@ function updatePresence() {
       }
     }
 
-    comcord.client.editStatus(comcord.state.afk ? "idle" : "online", [
-      {
-        name: "comcord",
-        type: 0,
-        application_id: CLIENT_ID,
-        timestamps: {
-          start: comcord.state.startTime,
+    comcord.client.editStatus(
+      comcord.state.afk ? "idle" : comcord.config.defaultStatus ?? "online",
+      [
+        {
+          name: "comcord",
+          type: 0,
+          application_id: CLIENT_ID,
+          timestamps: {
+            start: comcord.state.startTime,
+          },
         },
-      },
-    ]);
+      ]
+    );
   } else {
     const activity = {
       application_id: CLIENT_ID,
@@ -76,9 +79,10 @@ function updatePresence() {
       activity.state = "AFK";
     }
 
-    comcord.client.editStatus(comcord.state.afk ? "idle" : "online", [
-      activity,
-    ]);
+    comcord.client.editStatus(
+      comcord.state.afk ? "idle" : comcord.config.defaultStatus ?? "online",
+      [activity]
+    );
   }
 }
 
