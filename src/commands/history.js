@@ -53,7 +53,6 @@ addCommand("p", "peek at channel", function () {
     return;
   }
 
-  listChannels();
   startPrompt(":peek> ", async function (input) {
     console.log("");
     if (input == "") {
@@ -76,6 +75,52 @@ addCommand("p", "peek at channel", function () {
       console.log("<channel not found>");
     } else {
       await getHistory(20, target);
+    }
+  });
+});
+addCommand("P", "cross-guild peek", function () {
+  startPrompt(":guild> ", async function (input) {
+    console.log("");
+    if (input == "") {
+      return;
+    }
+    let targetGuild;
+    for (const guild of comcord.client.guilds.values()) {
+      if (guild.name.toLowerCase().indexOf(input.toLowerCase()) > -1) {
+        targetGuild = guild.id;
+        break;
+      }
+    }
+
+    if (targetGuild == null) {
+      console.log("<guild not found>");
+    } else {
+      startPrompt(":peek> ", async function (input) {
+        console.log("");
+        if (input == "") {
+          return;
+        }
+        let target;
+
+        const guild = comcord.client.guilds.get(targetGuild);
+        const channels = [...guild.channels.values()].filter(
+          (c) => c.type == 0
+        );
+        channels.sort((a, b) => a.position - b.position);
+
+        for (const channel of channels) {
+          if (channel.name.toLowerCase().indexOf(input.toLowerCase()) > -1) {
+            target = channel.id;
+            break;
+          }
+        }
+
+        if (target == null) {
+          console.log("<channel not found>");
+        } else {
+          await getHistory(20, target);
+        }
+      });
     }
   });
 });
