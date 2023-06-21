@@ -3,7 +3,7 @@ const chalk = require("chalk");
 
 const REGEX_CODEBLOCK = /```(?:([a-z0-9_+\-.]+?)\n)?\n*([^\n][^]*?)\n*```/i;
 const REGEX_CODEBLOCK_GLOBAL =
-  /```(?:([a-z0-9_+\-.]+?)\n)?\n*([^\n][^]*?)\n*```/gi;
+  /```(?:[a-z0-9_+\-.]+?\n)?\n*([^\n][^]*?)\n*```/gi;
 
 const REGEX_MENTION = /<@!?(\d+)>/g;
 const REGEX_ROLE_MENTION = /<@&?(\d+)>/g;
@@ -163,6 +163,7 @@ function formatMessage({
   stickers,
   reply,
   timestamp,
+  mention = false,
   noColor = false,
   dump = false,
   history = false,
@@ -301,13 +302,17 @@ function formatMessage({
           )} ${content}`
         );
       } else {
-        const nameColor = bot ? chalk.bold.yellow : chalk.bold.cyan;
+        const nameColor = mention
+          ? chalk.bold.red
+          : bot
+          ? chalk.bold.yellow
+          : chalk.bold.cyan;
 
-        // TODO: markdown
         console.log(
           nameColor(`[${name}]`) +
             " ".repeat(Math.abs(comcord.state.nameLength - (name.length + 2))) +
-            chalk.reset(" " + content)
+            chalk.reset(" " + content) +
+            (mention ? "\x07" : "")
         );
       }
     }
@@ -356,6 +361,14 @@ function processMessage(msg, options = {}) {
 
   if (msg.time) {
     console.log(msg.content);
+  } else if (msg.ping) {
+    console.log(
+      chalk.bold.red(
+        `**mentioned by ${msg.author?.username ?? "<unknown>"} in #${
+          msg.channel?.name ?? "<unknown>"
+        } in ${msg.channel.guild?.name ?? "<unknown>"}**\x07`
+      )
+    );
   } else if (msg.content && msg.content.indexOf("\n") > -1) {
     if (msg.content.match(REGEX_CODEBLOCK)) {
       formatMessage({
@@ -364,12 +377,15 @@ function processMessage(msg, options = {}) {
         bot: msg.author.bot,
         content: msg.content.replace(
           REGEX_CODEBLOCK_GLOBAL,
-          (_, lang, content) => content
+          (_, content) => content
         ),
         attachments: msg.attachments,
         stickers: msg.stickerItems,
         reply: msg.referencedMessage,
         timestamp: msg.timestamp,
+        mention:
+          msg.mentionsEveryone ||
+          msg.mentions.find((user) => user.id == comcord.client.user.id),
         dump: true,
         ...options,
       });
@@ -390,6 +406,10 @@ function processMessage(msg, options = {}) {
           stickers: index == lines.length - 1 ? msg.stickerItems : [],
           reply: index == 0 ? msg.referencedMessage : null,
           timestamp: msg.timestamp,
+          mention:
+            index == 0 &&
+            (msg.mentionsEveryone ||
+              msg.mentions.find((user) => user.id == comcord.client.user.id)),
           ...options,
         });
       }
@@ -404,6 +424,9 @@ function processMessage(msg, options = {}) {
       stickers: msg.stickerItems,
       reply: msg.referencedMessage,
       timestamp: msg.timestamp,
+      mention:
+        msg.mentionsEveryone ||
+        msg.mentions.find((user) => user.id == comcord.client.user.id),
       ...options,
     });
   }

@@ -157,6 +157,21 @@ rpc.once("ready", function () {
 rpc.on("error", function () {});
 
 client.on("messageCreate", async function (msg) {
+  if (
+    (msg.mentions.find((user) => user.id == client.user.id) ||
+      msg.mentionEveryone) &&
+    msg.channel.id != comcord.state.currentChannel &&
+    msg.channel.type !== Constants.ChannelTypes.DM &&
+    msg.channel.type !== Constants.ChannelTypes.GROUP_DM
+  ) {
+    const data = {ping: true, channel: msg.channel, author: msg.author};
+    if (comcord.state.inPrompt) {
+      comcord.state.messageQueue.push(data);
+    } else {
+      processMessage(data);
+    }
+  }
+
   if (!msg.author) return;
   if (msg.author.id === client.user.id) return;
 
