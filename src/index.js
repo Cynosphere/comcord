@@ -125,8 +125,10 @@ client.on("ready", function () {
   }
 });
 client.on("disconnect", function () {
-  comcord.state.connected = false;
-  console.log("% Disconnected, retrying...");
+  if (!comcord.state.quitting) {
+    comcord.state.connected = false;
+    console.log("% Disconnected, retrying...");
+  }
 });
 
 rpc.on("connected", function () {
