@@ -50,10 +50,11 @@ You **MUST** grant your bot all Privileged Gateway Intents.
   - [x] AFK toggle (A)
   - [x] Send DM (s)
   - [x] Answer DM (a)
+  - [x] Peek (p)
 - [x] Message Receiving
   - [x] Markdown styling
-    - [ ] Common markdown (bold, italic, etc)
-    - [ ] Figure out how spoilers would work
+    - [x] Common markdown (bold, italic, etc)
+    - [x] Figure out how spoilers would work
     - [x] Emotes?????
     - [x] Timestamp parsing
     - [x] Mentions parsing

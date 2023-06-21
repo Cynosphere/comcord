@@ -11,6 +11,16 @@ const REGEX_CHANNEL = /<#(\d+)>/g;
 const REGEX_EMOTE = /<(?:\u200b|&)?a?:(\w+):(\d+)>/g;
 const REGEX_COMMAND = /<\/([^\s]+?):(\d+)>/g;
 
+const REGEX_BLOCKQUOTE = /^ *>>?>? +/;
+const REGEX_GREENTEXT = /^(>.+?)(?:\n|$)/;
+const REGEX_SPOILER = /\|\|(.+?)\|\|/;
+const REGEX_BOLD = /\*\*(.+?)\*\*/g;
+const REGEX_UNDERLINE = /__(.+?)__/g;
+const REGEX_ITALIC_1 = /\*(.+?)\*/g;
+const REGEX_ITALIC_2 = /_(.+?)_/g;
+const REGEX_STRIKE = /~~(.+?)~~/g;
+const REGEX_3Y3 = /[\u{e0020}-\u{e007e}]{1,}/gu;
+
 function readableTime(time) {
   const seconds = time / 1000;
   const minutes = seconds / 60;
@@ -154,6 +164,37 @@ function replaceTimestamps(_, time, format = "f") {
   return TIME_FORMATS[format](time * 1000);
 }
 
+function replaceStyledMarkdown(content) {
+  content = content.replace(REGEX_BLOCKQUOTE, chalk.blackBright("\u258e"));
+  content = content.replace(REGEX_GREENTEXT, (orig) => chalk.green(orig));
+
+  if (comcord.config.enable3y3) {
+    content = content.replace(REGEX_3Y3, (text) =>
+      chalk.italic.magenta(
+        [...text]
+          .map((char) => String.fromCodePoint(char.codePointAt(0) - 0xe0000))
+          .join("")
+      )
+    );
+  }
+
+  content = content.replace(REGEX_SPOILER, (_, text) =>
+    chalk.bgBlack.black(text)
+  );
+  content = content.replace(REGEX_STRIKE, (_, text) =>
+    chalk.strikethrough(text)
+  );
+  content = content.replace(REGEX_BOLD, (_, text) => chalk.bold(text));
+  content = content.replace(REGEX_UNDERLINE, (_, text) =>
+    chalk.underline(text)
+  );
+  content = content
+    .replace(REGEX_ITALIC_1, (_, text) => chalk.italic(text))
+    .replace(REGEX_ITALIC_2, (_, text) => chalk.italic(text));
+
+  return content;
+}
+
 function formatMessage({
   channel,
   name,
@@ -223,13 +264,11 @@ function formatMessage({
       console.log(
         chalk.bold.white(" \u250d ") +
           nameColor(`[${reply.author.username}] `) +
-          chalk.reset(
-            `${
-              length > 79
-                ? replyContent.substring(0, 79 - headerLength) + "\u2026"
-                : replyContent
-            }`
-          )
+          `${
+            length > 79
+              ? replyContent.substring(0, 79 - headerLength) + "\u2026"
+              : replyContent
+          }`
       );
     }
   }
@@ -272,18 +311,46 @@ function formatMessage({
 
     if (dm) {
       if (noColor) {
+        if (comcord.config.enable3y3) {
+          content = content.replace(
+            REGEX_3Y3,
+            (text) =>
+              `<3y3:${[...text]
+                .map((char) =>
+                  String.fromCodePoint(char.codePointAt(0) - 0xe0000)
+                )
+                .join("")}>`
+          );
+        }
+
         console.log(`*${name}* ${content}\x07`);
       } else {
-        console.log(
-          chalk.bold.red(`*${name}*`) + chalk.reset(" " + content + "\x07")
-        );
+        content = replaceStyledMarkdown(content);
+
+        console.log(`${chalk.bold.red(`*${name}*`)} ${content}\x07`);
       }
     } else if (
-      (content.length > 1 &&
-        content.startsWith("*") &&
-        content.endsWith("*")) ||
-      (content.startsWith("_") && content.endsWith("_"))
+      content.length > 1 &&
+      ((content.startsWith("*") &&
+        content.endsWith("*") &&
+        !content.startsWith("**") &&
+        !content.endsWith("**")) ||
+        (content.startsWith("_") &&
+          content.endsWith("_") &&
+          !content.startsWith("__") &&
+          !content.endsWith("__")))
     ) {
+      if (comcord.config.enable3y3) {
+        content = content.replace(
+          REGEX_3Y3,
+          (text) =>
+            `<3y3:${[...text]
+              .map((char) =>
+                String.fromCodePoint(char.codePointAt(0) - 0xe0000)
+              )
+              .join("")}>`
+        );
+      }
       const str = `<${name} ${content.substring(1, content.length - 1)}>`;
       if (noColor) {
         console.log(str);
@@ -306,6 +373,18 @@ function formatMessage({
       }
     } else {
       if (noColor) {
+        if (comcord.config.enable3y3) {
+          content = content.replace(
+            REGEX_3Y3,
+            (text) =>
+              `<3y3:${[...text]
+                .map((char) =>
+                  String.fromCodePoint(char.codePointAt(0) - 0xe0000)
+                )
+                .join("")}>`
+          );
+        }
+
         console.log(
           `[${name}]${" ".repeat(
             Math.abs(comcord.state.nameLength - (name.length + 2))
@@ -318,11 +397,12 @@ function formatMessage({
           ? chalk.bold.yellow
           : chalk.bold.cyan;
 
+        content = replaceStyledMarkdown(content);
+
         console.log(
-          nameColor(`[${name}]`) +
-            " ".repeat(Math.abs(comcord.state.nameLength - (name.length + 2))) +
-            chalk.reset(" " + content) +
-            (mention ? "\x07" : "")
+          `${nameColor(`[${name}]`)}${" ".repeat(
+            Math.abs(comcord.state.nameLength - (name.length + 2))
+          )} ${content}${mention ? "\x07" : ""}`
         );
       }
     }
@@ -357,6 +437,7 @@ function formatMessage({
   if (history) {
     return lines;
   }
+  return null;
 }
 
 function processMessage(msg, options = {}) {
@@ -375,6 +456,7 @@ function processMessage(msg, options = {}) {
 
   if (msg.time) {
     console.log(msg.content);
+    return null;
   } else if (msg.ping) {
     console.log(
       chalk.bold.red(
@@ -383,6 +465,7 @@ function processMessage(msg, options = {}) {
         } in ${msg.channel.guild?.name ?? "<unknown>"}**\x07`
       )
     );
+    return null;
   } else if (msg.content && msg.content.indexOf("\n") > -1) {
     if (msg.content.match(REGEX_CODEBLOCK)) {
       return formatMessage({
@@ -430,6 +513,7 @@ function processMessage(msg, options = {}) {
           })
         );
       }
+      return outLines;
     }
   } else {
     return formatMessage({
