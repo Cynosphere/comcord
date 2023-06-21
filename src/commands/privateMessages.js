@@ -4,15 +4,20 @@ const {addCommand} = require("../lib/command");
 const {startPrompt} = require("../lib/prompt");
 const {listUsers} = require("./listUsers");
 
-function startDM(user) {
+function startDM(channel) {
   startPrompt(":msg> ", async function (input) {
     if (input == "") {
-      console.log(`\n<message not sent to ${user.username}>`);
+      console.log(
+        `\n<message not sent to ${channel.recipent?.username ?? "group DM"}>`
+      );
     } else {
       try {
-        const channel = await comcord.client.getDMChannel(user.id);
         await channel.createMessage({content: input});
-        console.log(chalk.bold.green(`\n<message sent to ${user.username}>`));
+        console.log(
+          chalk.bold.green(
+            `\n<message sent to ${channel.recipient?.username ?? "group DM"}>`
+          )
+        );
       } catch (err) {
         console.log(`\n<failed to send message: ${err.message}>`);
       }
@@ -43,7 +48,9 @@ addCommand("s", "send private", function () {
 addCommand("a", "answer a send", function () {
   if (comcord.state.lastDM) {
     console.log(
-      chalk.bold.green(`<answering ${comcord.state.lastDM.username}>`)
+      chalk.bold.green(
+        `<answering ${comcord.state.lastDM.recipient?.username ?? "group DM"}>`
+      )
     );
     startDM(comcord.state.lastDM);
   } else {

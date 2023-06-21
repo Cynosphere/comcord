@@ -1,3 +1,4 @@
+const {Constants} = require("@projectdysnomia/dysnomia");
 const chalk = require("chalk");
 
 const REGEX_CODEBLOCK = /```(?:([a-z0-9_+\-.]+?)\n)?\n*([^\n][^]*?)\n*```/i;
@@ -154,17 +155,26 @@ function replaceTimestamps(_, time, format = "f") {
 }
 
 function formatMessage({
+  channel,
   name,
   content,
   bot,
   attachments,
   stickers,
   reply,
+  timestamp,
   noColor = false,
   dump = false,
   history = false,
   dm = false,
+  join = false,
+  pin = false,
 }) {
+  const dateObj = new Date(timestamp);
+  const hour = dateObj.getUTCHours().toString().padStart(2, "0"),
+    minutes = dateObj.getUTCMinutes().toString().padStart(2, "0"),
+    seconds = dateObj.getUTCSeconds().toString().padStart(2, "0");
+
   if (name.length + 2 > comcord.state.nameLength)
     comcord.state.nameLength = name.length + 2;
 
@@ -263,14 +273,25 @@ function formatMessage({
         content.endsWith("*")) ||
       (content.startsWith("_") && content.endsWith("_"))
     ) {
+      const str = `<${name} ${content.substring(1, content.length - 1)}>`;
       if (noColor) {
-        console.log(`<${name} ${content.substring(1, content.length - 1)}>`);
+        console.log(str);
       } else {
-        console.log(
-          chalk.bold.green(
-            `<${name} ${content.substring(1, content.length - 1)}>`
-          )
-        );
+        console.log(chalk.bold.green(str));
+      }
+    } else if (join) {
+      const str = `[${hour}:${minutes}:${seconds}] ${name} has joined ${channel.guild.name}`;
+      if (noColor) {
+        console.log(str);
+      } else {
+        console.log(chalk.bold.yellow(str));
+      }
+    } else if (pin) {
+      const str = `[${hour}:${minutes}:${seconds}] ${name} pinned a message to this channel`;
+      if (noColor) {
+        console.log(str);
+      } else {
+        console.log(chalk.bold.yellow(str));
       }
     } else {
       if (noColor) {
@@ -320,8 +341,17 @@ function formatMessage({
 }
 
 function processMessage(msg, options = {}) {
-  if (msg.channel?.recipient) {
+  if (
+    msg.channel?.type === Constants.ChannelTypes.DM ||
+    msg.channel?.type === Constants.ChannelTypes.GROUP_DM
+  ) {
     options.dm = true;
+  }
+
+  if (msg.type === Constants.MessageTypes.USER_JOIN) {
+    options.join = true;
+  } else if (msg.type === Constants.MessageTypes.CHANNEL_PINNED_MESSAGE) {
+    options.pin = true;
   }
 
   if (msg.time) {
@@ -329,6 +359,7 @@ function processMessage(msg, options = {}) {
   } else if (msg.content && msg.content.indexOf("\n") > -1) {
     if (msg.content.match(REGEX_CODEBLOCK)) {
       formatMessage({
+        channel: msg.channel,
         name: msg.author.username,
         bot: msg.author.bot,
         content: msg.content.replace(
@@ -338,6 +369,7 @@ function processMessage(msg, options = {}) {
         attachments: msg.attachments,
         stickers: msg.stickerItems,
         reply: msg.referencedMessage,
+        timestamp: msg.timestamp,
         dump: true,
         ...options,
       });
@@ -346,6 +378,7 @@ function processMessage(msg, options = {}) {
       for (const index in lines) {
         const line = lines[index];
         formatMessage({
+          channel: msg.channel,
           name: msg.author.username,
           bot: msg.author.bot,
           content:
@@ -356,18 +389,21 @@ function processMessage(msg, options = {}) {
           attachments: index == lines.length - 1 ? msg.attachments : [],
           stickers: index == lines.length - 1 ? msg.stickerItems : [],
           reply: index == 0 ? msg.referencedMessage : null,
+          timestamp: msg.timestamp,
           ...options,
         });
       }
     }
   } else {
     formatMessage({
+      channel: msg.channel,
       name: msg.author.username,
       bot: msg.author.bot,
       content: msg.content + (msg.editedTimestamp != null ? " (edited)" : ""),
       attachments: msg.attachments,
       stickers: msg.stickerItems,
       reply: msg.referencedMessage,
+      timestamp: msg.timestamp,
       ...options,
     });
   }

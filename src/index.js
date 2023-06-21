@@ -154,15 +154,20 @@ client.on("messageCreate", async function (msg) {
     msg.author.id != client.user.id &&
     !msg.guildID
   ) {
-    const newChannel = await client.getDMChannel(msg.author.id);
-    if (msg.channel.id == newChannel.id) msg.channel = newChannel;
+    if (msg.channel.type === Constants.ChannelTypes.DM) {
+      const newChannel = await client.getDMChannel(msg.author.id);
+      if (msg.channel.id == newChannel.id) msg.channel = newChannel;
+    } else if (msg.channel.type === Constants.ChannelTypes.GROUP_DM) {
+      // TODO
+    }
   }
 
   if (!(msg.channel instanceof Channel)) return;
 
   if (
     msg.channel.id == comcord.state.currentChannel ||
-    msg.channel?.recipient != null
+    msg.channel.type === Constants.ChannelTypes.DM ||
+    msg.channel.type === Constants.ChannelTypes.GROUP_DM
   ) {
     if (comcord.state.inPrompt) {
       comcord.state.messageQueue.push(msg);
@@ -171,8 +176,11 @@ client.on("messageCreate", async function (msg) {
     }
   }
 
-  if (msg.channel?.recipient != null) {
-    comcord.state.lastDM = msg.author;
+  if (
+    msg.channel.type === Constants.ChannelTypes.DM ||
+    msg.channel.type === Constants.ChannelTypes.GROUP_DM
+  ) {
+    comcord.state.lastDM = msg.channel;
   }
 });
 client.on("messageUpdate", async function (msg, old) {
@@ -183,15 +191,20 @@ client.on("messageUpdate", async function (msg, old) {
     msg.author.id != client.user.id &&
     !msg.guildID
   ) {
-    const newChannel = await client.getDMChannel(msg.author.id);
-    if (msg.channel.id == newChannel.id) msg.channel = newChannel;
+    if (msg.channel.type === Constants.ChannelTypes.DM) {
+      const newChannel = await client.getDMChannel(msg.author.id);
+      if (msg.channel.id == newChannel.id) msg.channel = newChannel;
+    } else if (msg.channel.type === Constants.ChannelTypes.GROUP_DM) {
+      // TODO
+    }
   }
 
   if (!(msg.channel instanceof Channel)) return;
 
   if (
     msg.channel.id == comcord.state.currentChannel ||
-    msg.channel?.recipient != null
+    msg.channel.type === Constants.ChannelTypes.DM ||
+    msg.channel.type === Constants.ChannelTypes.GROUP_DM
   ) {
     if (old && msg.content == old.content) return;
 
@@ -202,8 +215,11 @@ client.on("messageUpdate", async function (msg, old) {
     }
   }
 
-  if (msg.channel?.recipient != null) {
-    comcord.state.lastDM = msg.author;
+  if (
+    msg.channel.type === Constants.ChannelTypes.DM ||
+    msg.channel.type === Constants.ChannelTypes.GROUP_DM
+  ) {
+    comcord.state.lastDM = msg.channel;
   }
 });
 
