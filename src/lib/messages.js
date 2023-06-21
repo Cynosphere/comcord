@@ -176,6 +176,16 @@ function formatMessage({
     minutes = dateObj.getUTCMinutes().toString().padStart(2, "0"),
     seconds = dateObj.getUTCSeconds().toString().padStart(2, "0");
 
+  let console = global.console;
+  const lines = [];
+  if (history) {
+    console = {
+      log: function (...args) {
+        lines.push(...args.join(" ").split("\n"));
+      },
+    };
+  }
+
   if (name.length + 2 > comcord.state.nameLength)
     comcord.state.nameLength = name.length + 2;
 
@@ -343,6 +353,10 @@ function formatMessage({
       }
     }
   }
+
+  if (history) {
+    return lines;
+  }
 }
 
 function processMessage(msg, options = {}) {
@@ -371,7 +385,7 @@ function processMessage(msg, options = {}) {
     );
   } else if (msg.content && msg.content.indexOf("\n") > -1) {
     if (msg.content.match(REGEX_CODEBLOCK)) {
-      formatMessage({
+      return formatMessage({
         channel: msg.channel,
         name: msg.author.username,
         bot: msg.author.bot,
@@ -391,31 +405,34 @@ function processMessage(msg, options = {}) {
       });
     } else {
       const lines = msg.content.split("\n");
+      const outLines = [];
       for (const index in lines) {
         const line = lines[index];
-        formatMessage({
-          channel: msg.channel,
-          name: msg.author.username,
-          bot: msg.author.bot,
-          content:
-            line +
-            (msg.editedTimestamp != null && index == lines.length - 1
-              ? " (edited)"
-              : ""),
-          attachments: index == lines.length - 1 ? msg.attachments : [],
-          stickers: index == lines.length - 1 ? msg.stickerItems : [],
-          reply: index == 0 ? msg.referencedMessage : null,
-          timestamp: msg.timestamp,
-          mention:
-            index == 0 &&
-            (msg.mentionsEveryone ||
-              msg.mentions.find((user) => user.id == comcord.client.user.id)),
-          ...options,
-        });
+        outLines.push(
+          formatMessage({
+            channel: msg.channel,
+            name: msg.author.username,
+            bot: msg.author.bot,
+            content:
+              line +
+              (msg.editedTimestamp != null && index == lines.length - 1
+                ? " (edited)"
+                : ""),
+            attachments: index == lines.length - 1 ? msg.attachments : [],
+            stickers: index == lines.length - 1 ? msg.stickerItems : [],
+            reply: index == 0 ? msg.referencedMessage : null,
+            timestamp: msg.timestamp,
+            mention:
+              index == 0 &&
+              (msg.mentionsEveryone ||
+                msg.mentions.find((user) => user.id == comcord.client.user.id)),
+            ...options,
+          })
+        );
       }
     }
   } else {
-    formatMessage({
+    return formatMessage({
       channel: msg.channel,
       name: msg.author.username,
       bot: msg.author.bot,

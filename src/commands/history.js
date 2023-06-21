@@ -10,16 +10,18 @@ async function getHistory(limit = 20, channel = null) {
   }
 
   const messages = await comcord.client.getMessages(
-    channel ?? comcord.state.currentChannel,
-    {limit}
+    channel ?? comcord.state.currentChannel
   );
   messages.reverse();
 
   console.log("--Beginning-Review".padEnd(72, "-"));
 
+  const lines = [];
   for (const msg of messages) {
-    processMessage(msg, {noColor: true, history: true});
+    const processedLines = processMessage(msg, {noColor: true, history: true});
+    if (processedLines) lines.push(...processedLines);
   }
+  console.log(lines.slice(-limit).join("\n"));
 
   console.log("--Review-Complete".padEnd(73, "-"));
 }
