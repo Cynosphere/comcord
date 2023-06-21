@@ -243,6 +243,23 @@ function formatMessage({
       .replace(REGEX_EMOTE, replaceEmotes)
       .replace(REGEX_COMMAND, replaceCommands)
       .replace(REGEX_TIMESTAMP, replaceTimestamps);
+
+    if (!noColor) {
+      replyContent = replaceStyledMarkdown(replyContent);
+    } else {
+      if (comcord.config.enable3y3) {
+        replyContent = replyContent.replace(
+          REGEX_3Y3,
+          (text) =>
+            `<3y3:${[...text]
+              .map((char) =>
+                String.fromCodePoint(char.codePointAt(0) - 0xe0000)
+              )
+              .join("")}>`
+        );
+      }
+    }
+
     if (reply.attachments.size > 0) {
       replyContent += ` <${reply.attachments.size} attachment${
         reply.attachments.size > 1 ? "s" : ""
@@ -266,7 +283,8 @@ function formatMessage({
           nameColor(`[${reply.author.username}] `) +
           `${
             length > 79
-              ? replyContent.substring(0, 79 - headerLength) + "\u2026"
+              ? replyContent.substring(0, 79 - headerLength) +
+                chalk.reset("\u2026")
               : replyContent
           }`
       );
