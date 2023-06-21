@@ -147,6 +147,7 @@ rpc.once("ready", function () {
 rpc.on("error", function () {});
 
 client.on("messageCreate", async function (msg) {
+  if (!msg.author) return;
   if (msg.author.id === client.user.id) return;
 
   if (
@@ -184,6 +185,7 @@ client.on("messageCreate", async function (msg) {
   }
 });
 client.on("messageUpdate", async function (msg, old) {
+  if (!msg.author) return;
   if (msg.author.id === client.user.id) return;
 
   if (
@@ -220,6 +222,31 @@ client.on("messageUpdate", async function (msg, old) {
     msg.channel.type === Constants.ChannelTypes.GROUP_DM
   ) {
     comcord.state.lastDM = msg.channel;
+  }
+});
+client.on("messageReactionAdd", async function (msg, emoji, reactor) {
+  if (msg.channel.id != comcord.state.currentChannel) return;
+  const reply =
+    msg.channel.messages.get(msg.id) ??
+    (await msg.channel
+      .getMessages({
+        limit: 1,
+        around: msg.id,
+      })
+      .then((msgs) => msgs[0]));
+
+  const data = {
+    channel: msg.channel,
+    referencedMessage: reply,
+    author: reactor?.user ?? client.users.get(reactor.id),
+    timestamp: Date.now(),
+    content: `*reacted with ${emoji.id ? `:${emoji.name}:` : emoji.name}*`,
+  };
+
+  if (comcord.state.inPrompt) {
+    comcord.state.messageQueue.push(data);
+  } else {
+    processMessage(data);
   }
 });
 
