@@ -31,6 +31,7 @@ process.title = "comcord";
 global.comcord = {
   config,
   state: {
+    connected: true,
     rpcConnected: false,
     startTime: Date.now(),
     currentGuild: null,
@@ -118,6 +119,15 @@ client.once("ready", function () {
   }
 });
 client.on("error", function () {});
+client.on("ready", function () {
+  if (comcord.state.connected === false) {
+    console.log("% Reconnected");
+  }
+});
+client.on("disconnect", function () {
+  comcord.state.connected = false;
+  console.log("% Disconnected, retrying...");
+});
 
 rpc.on("connected", function () {
   comcord.state.rpcConnected = true;
