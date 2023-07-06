@@ -1,4 +1,4 @@
-package main
+package rcfile
 
 import (
   "os"
@@ -6,7 +6,7 @@ import (
   "strings"
 )
 
-func GetRCPath() string {
+func GetPath() string {
   homeDir, err := os.UserHomeDir()
   if err != nil {
     panic(err)
@@ -15,9 +15,9 @@ func GetRCPath() string {
   return filepath.Join(homeDir, ".comcordrc")
 }
 
-func LoadRCFile() map[string]string {
+func Load() map[string]string {
   config := make(map[string]string)
-  file, err := os.ReadFile(GetRCPath())
+  file, err := os.ReadFile(GetPath())
   if err != nil {
     panic(err)
   }
@@ -33,14 +33,14 @@ func LoadRCFile() map[string]string {
   return config
 }
 
-func SaveRCFile(config map[string]string) {
+func Save(config map[string]string) {
   out := ""
 
   for key, value := range config {
     out = out + key + "=" + value + "\n"
   }
 
-  err := os.WriteFile(GetRCPath(), []byte(out), 0644)
+  err := os.WriteFile(GetPath(), []byte(out), 0644)
   if err != nil {
     panic(err)
   }
