@@ -17,6 +17,7 @@ type ComcordState struct {
   AFK bool
   MessageQueue []discordgo.Message
   LastChannel map[string]string
+  LastDM string
 }
 
 var state ComcordState
@@ -99,4 +100,12 @@ func GetMessageQueue() []discordgo.Message {
 
 func AddMessageToQueue(msg discordgo.Message) {
   state.MessageQueue = append(state.MessageQueue, msg)
+}
+
+func GetLastDM() string {
+  return state.LastDM
+}
+
+func SetLastDM(value string) {
+  state.LastDM = value
 }

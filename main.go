@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"os/signal"
+"os"
 	"strings"
-	"syscall"
 
+	"atomicgo.dev/keyboard"
+	"atomicgo.dev/keyboard/keys"
+	"github.com/Cynosphere/comcord/commands"
 	"github.com/Cynosphere/comcord/events"
 	"github.com/Cynosphere/comcord/rcfile"
 	"github.com/Cynosphere/comcord/state"
@@ -48,6 +49,7 @@ func main() {
   }
 
   state.Setup()
+  commands.Setup()
 
   // TODO: user account support
   client, err := discordgo.New("Bot " + token)
@@ -73,9 +75,23 @@ func main() {
   fmt.Println("COMcord (c)left 2023")
   fmt.Println("Type 'h' for Commands")
 
-  sc := make(chan os.Signal, 1)
-  signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
-  <-sc
+  keyboard.Listen(func(key keys.Key) (stop bool, err error) {
+    if !state.IsInPrompt() {
+      if key.Code == keys.CtrlC {
+        client.Close()
+        os.Exit(0)
+        return true, nil
+      } else {
+        command, has := commands.GetCommand(key.String())
+        if has {
+          command.Run(client)
+        } else {
 
-  client.Close()
+        }
+      }
+
+    }
+
+    return false, nil
+  })
 }
