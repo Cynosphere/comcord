@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-"os"
+	"os"
 	"strings"
 
 	"atomicgo.dev/keyboard"
@@ -12,9 +12,16 @@ import (
 	"github.com/Cynosphere/comcord/rcfile"
 	"github.com/Cynosphere/comcord/state"
 	"github.com/bwmarrin/discordgo"
+	"golang.org/x/term"
 )
 
 func main() {
+  oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+  if err != nil {
+    panic(err)
+  }
+  defer term.Restore(int(os.Stdin.Fd()), oldState)
+
   var config map[string]string = make(map[string]string)
   var token string
 
@@ -48,13 +55,17 @@ func main() {
     }
   }
 
-  state.Setup()
+  fmt.Println("\rCOMcord (c)left 2023")
+  fmt.Println("\rType 'h' for Commands")
+  fmt.Print("\r")
+
+  state.Setup(config)
   commands.Setup()
 
   // TODO: user account support
   client, err := discordgo.New("Bot " + token)
   if err != nil {
-    fmt.Println("% Failed to create client:", err)
+    fmt.Println("\r% Failed to create client:", err)
     os.Exit(1)
     return
   }
@@ -67,13 +78,10 @@ func main() {
 
   err = client.Open()
   if err != nil {
-    fmt.Println("% Failed to connect to Discord:", err)
+    fmt.Println("\r% Failed to connect to Discord:", err)
     os.Exit(1)
     return
   }
-
-  fmt.Println("COMcord (c)left 2023")
-  fmt.Println("Type 'h' for Commands")
 
   keyboard.Listen(func(key keys.Key) (stop bool, err error) {
     if !state.IsInPrompt() {
@@ -86,12 +94,17 @@ func main() {
         if has {
           command.Run(client)
         } else {
-
+          commands.SendMode(client)
         }
       }
-
     }
 
     return false, nil
   })
+
+	/*sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+	<-sc
+
+  client.Close()*/
 }

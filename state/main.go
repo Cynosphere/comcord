@@ -7,12 +7,13 @@ import (
 )
 
 type ComcordState struct {
+  Config map[string]string
   Connected bool
   RPCConnected bool
   StartTime int64
   CurrentGuild string
   CurrentChannel string
-  NameLength int32
+  NameLength int
   InPrompt bool
   AFK bool
   MessageQueue []discordgo.Message
@@ -22,16 +23,20 @@ type ComcordState struct {
 
 var state ComcordState
 
-func Setup() {
+func Setup(config map[string]string) {
   state = ComcordState{}
+  state.Config = config
   state.Connected = true
   state.RPCConnected = false
   state.StartTime = time.Now().Unix()
+  state.CurrentGuild = ""
+  state.CurrentChannel = ""
   state.NameLength = 2
   state.InPrompt = false
   state.AFK = false
   state.MessageQueue = make([]discordgo.Message, 0)
   state.LastChannel = make(map[string]string)
+  state.LastDM = ""
 }
 
 func IsConnected() bool {
@@ -70,11 +75,11 @@ func SetCurrentChannel(value string) {
   state.CurrentChannel = value
 }
 
-func GetNameLength() int32 {
+func GetNameLength() int {
   return state.NameLength
 }
 
-func SetNameLength(value int32) {
+func SetNameLength(value int) {
   state.NameLength = value
 }
 
@@ -102,10 +107,34 @@ func AddMessageToQueue(msg discordgo.Message) {
   state.MessageQueue = append(state.MessageQueue, msg)
 }
 
+func SetLastChannel(guild string, channel string) {
+  state.LastChannel[guild] = channel
+}
+
+func GetLastChannel(guild string) string {
+  channel, has := state.LastChannel[guild]
+
+  if has {
+    return channel
+  } else {
+    return ""
+  }
+}
+
 func GetLastDM() string {
   return state.LastDM
 }
 
 func SetLastDM(value string) {
   state.LastDM = value
+}
+
+func GetConfigValue(key string) string {
+  value, has := state.Config[key]
+
+  if has {
+    return value
+  } else {
+    return ""
+  }
 }
