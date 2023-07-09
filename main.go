@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 
 	"atomicgo.dev/keyboard"
@@ -73,8 +74,22 @@ func main() {
   // TODO: dont set for user accounts(? never really tested if it matters)
   client.Identify.Intents = discordgo.IntentsAll
 
-  client.AddHandlerOnce(events.Ready)
-  client.AddHandler(events.MessageCreate)
+  if config["useMobile"] == "true" {
+    client.Identify.Properties = discordgo.IdentifyProperties{
+      OS: "Android",
+      Browser: "Discord Android",
+      Device: "Pixel, raven",
+    }
+  } else {
+    // TODO: user account support
+    client.Identify.Properties = discordgo.IdentifyProperties{
+      OS: runtime.GOOS,
+      Browser: "comcord",
+      Device: "comcord",
+    }
+  }
+
+  events.Setup(client)
 
   err = client.Open()
   if err != nil {

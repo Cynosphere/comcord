@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/Cynosphere/comcord/lib"
 	"github.com/Cynosphere/comcord/state"
@@ -20,7 +21,7 @@ func SendMode(session *discordgo.Session) {
 
   state.SetInPrompt(true)
 
-  length := len(session.State.User.Username) + 2
+  length := utf8.RuneCountInString(session.State.User.Username) + 2
   curLength := state.GetNameLength()
 
   prompt := fmt.Sprintf("[%s]%s", session.State.User.Username, strings.Repeat(" ", (curLength - length) + 1))

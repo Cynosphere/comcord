@@ -21,6 +21,11 @@ func Setup() {
     Run: HelpCommand,
     Description: "command help",
   }
+
+  commandMap["c"] = Command{
+    Run: ClearCommand,
+    Description: "clear",
+  }
 }
 
 func GetCommand(key string) (Command, bool) {

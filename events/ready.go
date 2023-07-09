@@ -2,6 +2,7 @@ package events
 
 import (
 	"fmt"
+	"unicode/utf8"
 
 	"github.com/Cynosphere/comcord/state"
 	"github.com/bwmarrin/discordgo"
@@ -11,7 +12,7 @@ import (
 func Ready(session *discordgo.Session, event *discordgo.Ready) {
   fmt.Printf("\rLogged in as: %s\n\r", ansi.Color(fmt.Sprintf("%s (%s)", session.State.User.Username, session.State.User.ID), "yellow"))
 
-  state.SetNameLength(len(session.State.User.Username) + 2)
+  state.SetNameLength(utf8.RuneCountInString(session.State.User.Username) + 2)
 
   defaultGuild := state.GetConfigValue("defaultGuild")
   defaultChannel := state.GetConfigValue("defaultChannel")
