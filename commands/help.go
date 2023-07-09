@@ -4,24 +4,30 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Cynosphere/comcord/state"
 	"github.com/bwmarrin/discordgo"
-	"github.com/fatih/color"
+	"github.com/mgutz/ansi"
 )
 
+const format string = "  %s - %s%s"
+
 func HelpCommand(session *discordgo.Session) {
+  noColor := state.HasNoColor()
+
   fmt.Println("\r\nCOMcord (c)left 2023\n\r")
 
   index := 0
   for key, cmd := range GetAllCommands() {
-    str := fmt.Sprintf("  %s - %s", key, cmd.Description)
+    str := fmt.Sprintf(format, key, cmd.Description, "")
     length := len(str)
+    padding := strings.Repeat(" ", 25 - length)
 
-    fmt.Print("  ")
-    color.Set(color.FgYellow, color.Bold)
-    fmt.Print(key)
-    color.Unset()
-    fmt.Printf(" - %s", cmd.Description)
-    fmt.Print(strings.Repeat(" ", 25 - length))
+    if noColor {
+      fmt.Printf(format, key, cmd.Description, padding)
+    } else {
+      coloredKey := ansi.Color(key, "yellow+b")
+      fmt.Printf(format, coloredKey, cmd.Description, padding)
+    }
 
     index++
     if index % 3 == 0 {

@@ -9,23 +9,15 @@ import (
 )
 
 func Ready(session *discordgo.Session, event *discordgo.Ready) {
-  fmt.Printf("\rLogged in as: %s%s (%s)%s\n\r", ansi.ColorCode("yellow"), session.State.User.Username, session.State.User.ID, ansi.ColorCode("reset"))
+  fmt.Printf("\rLogged in as: %s\n\r", ansi.Color(fmt.Sprintf("%s (%s)", session.State.User.Username, session.State.User.ID), "yellow"))
 
   state.SetNameLength(len(session.State.User.Username) + 2)
 
   defaultGuild := state.GetConfigValue("defaultGuild")
   defaultChannel := state.GetConfigValue("defaultChannel")
   if defaultGuild != "" {
-    //var guild discordgo.Guild
-    hasGuild := false
-    for _, g := range session.State.Guilds {
-      if g.ID == defaultGuild {
-        //guild = *g
-        hasGuild = true
-        break
-      }
-    }
-    if hasGuild {
+    _, err := session.State.Guild(defaultGuild)
+    if err == nil {
       if defaultChannel != "" {
         state.SetCurrentChannel(defaultChannel)
         state.SetLastChannel(defaultGuild, defaultChannel)

@@ -1,12 +1,13 @@
 package events
 
 import (
+	"github.com/Cynosphere/comcord/lib"
 	"github.com/Cynosphere/comcord/state"
 	"github.com/bwmarrin/discordgo"
 )
 
 func MessageCreate(session *discordgo.Session, msg *discordgo.MessageCreate) {
-  if (msg.Author.ID == session.State.User.ID) {
+  if msg.Author.ID == session.State.User.ID {
     return
   }
 
@@ -15,13 +16,15 @@ func MessageCreate(session *discordgo.Session, msg *discordgo.MessageCreate) {
     return
   }
 
+  isDM := channel.Type == discordgo.ChannelTypeDM || channel.Type == discordgo.ChannelTypeGroupDM
+
   if state.IsInPrompt() {
-    state.AddMessageToQueue(*msg.Message)
+    state.AddMessageToQueue(msg.Message)
   } else {
-    // TODO
+    lib.ProcessMessage(session, msg.Message, lib.MessageOptions{NoColor: state.HasNoColor()})
   }
 
-  if channel.Type == discordgo.ChannelTypeDM || channel.Type == discordgo.ChannelTypeGroupDM {
+  if isDM {
     state.SetLastDM(msg.ChannelID)
   }
 }

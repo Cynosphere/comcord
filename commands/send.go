@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Cynosphere/comcord/lib"
 	"github.com/Cynosphere/comcord/state"
 	"github.com/bwmarrin/discordgo"
 	"github.com/ergochat/readline"
@@ -22,7 +23,10 @@ func SendMode(session *discordgo.Session) {
   length := len(session.State.User.Username) + 2
   curLength := state.GetNameLength()
 
-  prompt := fmt.Sprintf("%s[%s]%s%s", ansi.ColorCode("cyan+b"), session.State.User.Username, strings.Repeat(" ", (curLength - length) + 1), ansi.ColorCode("reset"))
+  prompt := fmt.Sprintf("[%s]%s", session.State.User.Username, strings.Repeat(" ", (curLength - length) + 1))
+  if !state.HasNoColor() {
+    prompt = ansi.Color(prompt, "cyan+b")
+  }
 
   input, _ := readline.NewFromConfig(&readline.Config{
     Prompt: prompt,
@@ -51,4 +55,5 @@ func SendMode(session *discordgo.Session) {
     // TODO: update afk state
   }
   state.SetInPrompt(false)
+  lib.ProcessQueue(session)
 }

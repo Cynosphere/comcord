@@ -16,9 +16,10 @@ type ComcordState struct {
   NameLength int
   InPrompt bool
   AFK bool
-  MessageQueue []discordgo.Message
+  MessageQueue []*discordgo.Message
   LastChannel map[string]string
   LastDM string
+  NoColor bool
 }
 
 var state ComcordState
@@ -34,9 +35,10 @@ func Setup(config map[string]string) {
   state.NameLength = 2
   state.InPrompt = false
   state.AFK = false
-  state.MessageQueue = make([]discordgo.Message, 0)
+  state.MessageQueue = make([]*discordgo.Message, 0)
   state.LastChannel = make(map[string]string)
   state.LastDM = ""
+  state.NoColor = false
 }
 
 func IsConnected() bool {
@@ -99,12 +101,16 @@ func SetAFK(value bool) {
   state.AFK = value
 }
 
-func GetMessageQueue() []discordgo.Message {
+func GetMessageQueue() []*discordgo.Message {
   return state.MessageQueue
 }
 
-func AddMessageToQueue(msg discordgo.Message) {
+func AddMessageToQueue(msg *discordgo.Message) {
   state.MessageQueue = append(state.MessageQueue, msg)
+}
+
+func EmptyMessageQueue() {
+  state.MessageQueue = make([]*discordgo.Message, 0)
 }
 
 func SetLastChannel(guild string, channel string) {
@@ -137,4 +143,12 @@ func GetConfigValue(key string) string {
   } else {
     return ""
   }
+}
+
+func SetNoColor(value bool) {
+  state.NoColor = value
+}
+
+func HasNoColor() bool {
+  return state.NoColor
 }
