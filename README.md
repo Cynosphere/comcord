@@ -12,9 +12,9 @@ TODO
 Go is more portable than Node.js
 
 ## TODO
-- [ ] Send mode
+- [x] Send mode
 - [ ] Commands
-  - [ ] Quit (q)
+  - [x] Quit (q)
   - [ ] Switch guilds (G)
   - [ ] Switch channels (g)
   - [ ] List online users in guild (w)
@@ -25,6 +25,8 @@ Go is more portable than Node.js
     - Creation date, join date, ID, etc
   - [ ] Room history (r)
   - [ ] Extended room history (R)
+  - [ ] Peek (p)
+  - [ ] Cross-guild peek (P)
   - [ ] List channels (l)
   - [ ] List guilds (L)
   - [ ] Clear (c)
@@ -33,20 +35,20 @@ Go is more portable than Node.js
   - [ ] AFK toggle (A)
   - [ ] Send DM (s)
   - [ ] Answer DM (a)
-- [ ] Message Receiving
+- [x] Message Receiving
   - Markdown styling
-    - [ ] Emotes
+    - [x] Emotes
     - [ ] Timestamp parsing
-    - [ ] Mentions parsing
+    - [x] Mentions parsing
   - [ ] Embeds in the style of commode's posted links
-  - [ ] Messages wrapped in `*`'s or `_`'s parsed as emotes
-  - [ ] Inline DMs to replicate commode's private messages
-  - [ ] Replies
+  - [x] Messages wrapped in `*`'s or `_`'s parsed as emotes
+  - [x] Inline DMs to replicate commode's private messages
+  - [x] Replies
   - [ ] Group DMs
-- [ ] Message sending
-  - [ ] Puts incoming messages into queue whilst in send mode
-- [ ] Configuration
-  - [ ] Write token from argv into rc file if rc file doesn't exist
-  - [ ] Default guild/channel
+- [x] Message sending
+  - [x] Puts incoming messages into queue whilst in send mode
+- [x] Configuration
+  - [x] Write token from argv into rc file if rc file doesn't exist
+  - [x] Default guild/channel
 - [ ] Threads
 - [ ] External rich presence when using bot accounts

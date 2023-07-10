@@ -66,7 +66,8 @@ func main() {
   // TODO: user account support
   client, err := discordgo.New("Bot " + token)
   if err != nil {
-    fmt.Println("\r% Failed to create client:", err)
+    fmt.Println("% Failed to create client:", err)
+    fmt.Print("\r")
     os.Exit(1)
     return
   }
@@ -93,7 +94,8 @@ func main() {
 
   err = client.Open()
   if err != nil {
-    fmt.Println("\r% Failed to connect to Discord:", err)
+    fmt.Println("% Failed to connect to Discord:", err)
+    fmt.Print("\r")
     os.Exit(1)
     return
   }
@@ -101,8 +103,7 @@ func main() {
   keyboard.Listen(func(key keys.Key) (stop bool, err error) {
     if !state.IsInPrompt() {
       if key.Code == keys.CtrlC {
-        client.Close()
-        os.Exit(0)
+        commands.QuitCommand(client)
         return true, nil
       } else {
         command, has := commands.GetCommand(key.String())
