@@ -26,6 +26,11 @@ func Setup() {
     Run: ClearCommand,
     Description: "clear",
   }
+
+  commandMap["e"] = Command{
+    Run: EmoteCommand,
+    Description: "emote",
+  }
 }
 
 func GetCommand(key string) (Command, bool) {
