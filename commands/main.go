@@ -31,6 +31,11 @@ func Setup() {
     Run: EmoteCommand,
     Description: "emote",
   }
+
+  commandMap["L"] = Command{
+    Run: ListGuildsCommand,
+    Description: "list guilds",
+  }
 }
 
 func GetCommand(key string) (Command, bool) {

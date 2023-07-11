@@ -18,7 +18,7 @@ Go is more portable than Node.js
   - [ ] Switch guilds (G)
   - [ ] Switch channels (g)
   - [ ] List online users in guild (w)
-  - [ ] Emote (e)
+  - [x] Emote (e)
     - Just sends message surrounded in `*`'s
   - [ ] Finger (f)
     - Shows presence data if available
@@ -28,7 +28,7 @@ Go is more portable than Node.js
   - [ ] Peek (p)
   - [ ] Cross-guild peek (P)
   - [ ] List channels (l)
-  - [ ] List guilds (L)
+  - [x] List guilds (L)
   - [x] Clear (c)
   - [ ] Surf channels forwards (>)
   - [ ] Surf channels backwards (<)
