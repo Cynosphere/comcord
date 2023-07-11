@@ -13,7 +13,7 @@ Go is more portable than Node.js
 
 ## TODO
 - [x] Send mode
-- [ ] Commands
+- [x] Commands
   - [x] Quit (q)
   - [ ] Switch guilds (G)
   - [ ] Switch channels (g)
@@ -29,7 +29,7 @@ Go is more portable than Node.js
   - [ ] Cross-guild peek (P)
   - [ ] List channels (l)
   - [ ] List guilds (L)
-  - [ ] Clear (c)
+  - [x] Clear (c)
   - [ ] Surf channels forwards (>)
   - [ ] Surf channels backwards (<)
   - [ ] AFK toggle (A)

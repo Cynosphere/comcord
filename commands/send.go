@@ -8,7 +8,6 @@ import (
 	"github.com/Cynosphere/comcord/lib"
 	"github.com/Cynosphere/comcord/state"
 	"github.com/bwmarrin/discordgo"
-	"github.com/ergochat/readline"
 	"github.com/mgutz/ansi"
 )
 
@@ -16,7 +15,7 @@ func SendMode(session *discordgo.Session) {
   channelId := state.GetCurrentChannel()
   if channelId == "" {
     fmt.Print("<not in a channel>\n\r")
-    return
+  return
   }
 
   state.SetInPrompt(true)
@@ -29,32 +28,22 @@ func SendMode(session *discordgo.Session) {
     prompt = ansi.Color(prompt, "cyan+b")
   }
 
-  input, _ := readline.NewFromConfig(&readline.Config{
-    Prompt: prompt,
-    UniqueEditLine: true,
-  })
-  defer input.Close()
-
-  out, err := input.Readline()
-  out = strings.TrimSpace(out)
-  input.Close()
-
-  if out == "" {
-    if err == readline.ErrInterrupt {
-      fmt.Print("^C<no message sent>\n\r")
+  lib.MakePrompt(session, prompt, true, func(session *discordgo.Session, input string, interrupt bool) {
+    if input == "" {
+      if interrupt {
+        fmt.Print("^C<no message sent>\n\r")
+      } else {
+        fmt.Print(prompt, "<no message sent>\n\r")
+      }
     } else {
-      fmt.Print(prompt, "<no message sent>\n\r")
-    }
-  } else {
-    fmt.Print(prompt, out, "\n\r")
-    _, err := session.ChannelMessageSend(channelId, out)
+      fmt.Print(prompt, input, "\n\r")
+      _, err := session.ChannelMessageSend(channelId, input)
 
-    if err != nil {
-      fmt.Print("<failed to send message: ", err, ">\n\r")
-    }
+      if err != nil {
+        fmt.Print("<failed to send message: ", err, ">\n\r")
+      }
 
-    // TODO: update afk state
-  }
-  state.SetInPrompt(false)
-  lib.ProcessQueue(session)
+      // TODO: update afk state
+    }
+  })
 }

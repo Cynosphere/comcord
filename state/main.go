@@ -15,6 +15,7 @@ type ComcordState struct {
   CurrentChannel string
   NameLength int
   InPrompt bool
+  PromptText string
   AFK bool
   MessageQueue []*discordgo.Message
   LastChannel map[string]string
@@ -34,6 +35,7 @@ func Setup(config map[string]string) {
   state.CurrentChannel = ""
   state.NameLength = 2
   state.InPrompt = false
+  state.PromptText = ""
   state.AFK = false
   state.MessageQueue = make([]*discordgo.Message, 0)
   state.LastChannel = make(map[string]string)
@@ -91,6 +93,14 @@ func IsInPrompt() bool {
 
 func SetInPrompt(value bool) {
   state.InPrompt = value
+}
+
+func GetPromptText() string {
+  return state.PromptText
+}
+
+func SetPromptText(value string) {
+  state.PromptText = value
 }
 
 func IsAFK() bool {
