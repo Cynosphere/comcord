@@ -13,7 +13,7 @@ import (
 	"github.com/mgutz/ansi"
 )
 
-var REGEX_CODEBLOCK = regexp.MustCompile(`(?i)\x60\x60\x60(?:([a-z0-9_+\-\.]+?)\n)?\n*([^\n].*?)\n*\x60\x60\x60`)
+var REGEX_CODEBLOCK = regexp.MustCompile(`(?i)\x60\x60\x60(?:([a-z0-9_+\-\.]+?)\n)?\n*([^\n](?:.|\n)*?)\n*\x60\x60\x60`)
 var REGEX_EMOTE = regexp.MustCompile(`<(?:\x{200b}|&)?a?:(\w+):(\d+)>`)
 
 type MessageOptions struct {
@@ -288,14 +288,16 @@ func ProcessMessage(session *discordgo.Session, msg *discordgo.Message, options 
   isDump := REGEX_CODEBLOCK.MatchString(content)
 
   if strings.Index(content, "\n") > -1 && !isDump {
-    for _, line := range strings.Split(content, "\n") {
+    for i, line := range strings.Split(content, "\n") {
       options.Content = line
       options.Name = msg.Author.Username
       options.Channel = msg.ChannelID
       options.Bot = msg.Author.Bot
       options.Attachments = msg.Attachments
       options.Stickers = msg.StickerItems
-      options.Reply = msg.ReferencedMessage
+      if i == 0 {
+        options.Reply = msg.ReferencedMessage
+      }
       options.IsMention = isPing
       options.IsDM = isDM
       options.IsJoin = msg.Type == discordgo.MessageTypeGuildMemberJoin

@@ -20,12 +20,13 @@ func Ready(session *discordgo.Session, event *discordgo.Ready) {
   defaultGuild := state.GetConfigValue("defaultGuild")
   defaultChannel := state.GetConfigValue("defaultChannel")
   if defaultGuild != "" {
-    _, err := session.State.Guild(defaultGuild)
+    guild, err := session.State.Guild(defaultGuild)
     if err == nil {
       if defaultChannel != "" {
         state.SetCurrentChannel(defaultChannel)
         state.SetLastChannel(defaultGuild, defaultChannel)
       }
+      commands.SwitchGuild(session, guild.Name)
     } else {
       fmt.Println("\r% This account is not in the defined default guild.")
     }

@@ -30,6 +30,10 @@ func MessageCreate(session *discordgo.Session, msg *discordgo.MessageCreate) {
 }
 
 func MessageUpdate(session *discordgo.Session, msg *discordgo.MessageUpdate) {
+  if msg.Author == nil {
+    return
+  }
+
   if msg.Author.ID == session.State.User.ID {
     return
   }
