@@ -21,6 +21,7 @@ type MessageOptions struct {
   Name string
   Channel string
   Bot bool
+  Webhook bool
   Attachments []*discordgo.MessageAttachment
   Stickers []*discordgo.Sticker
   Reply *discordgo.Message
@@ -177,6 +178,8 @@ func FormatMessage(session *discordgo.Session, options MessageOptions) {
       nameColor := "cyan+b"
       if options.IsMention {
         nameColor = "red+b"
+      } else if options.Webhook {
+        nameColor = "magenta+b"
       } else if options.Bot {
         nameColor = "yellow+b"
       }
@@ -293,6 +296,7 @@ func ProcessMessage(session *discordgo.Session, msg *discordgo.Message, options 
       options.Name = msg.Author.Username
       options.Channel = msg.ChannelID
       options.Bot = msg.Author.Bot
+      options.Webhook = msg.WebhookID != ""
       options.Attachments = msg.Attachments
       options.Stickers = msg.StickerItems
       if i == 0 {
@@ -311,6 +315,7 @@ func ProcessMessage(session *discordgo.Session, msg *discordgo.Message, options 
     options.Name = msg.Author.Username
     options.Channel = msg.ChannelID
     options.Bot = msg.Author.Bot
+    options.Webhook = msg.WebhookID != ""
     options.Attachments = msg.Attachments
     options.Stickers = msg.StickerItems
     options.Reply = msg.ReferencedMessage
