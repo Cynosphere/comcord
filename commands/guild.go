@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"math"
+	"regexp"
 	"sort"
 	"strings"
 	"unicode/utf8"
@@ -11,6 +12,8 @@ import (
 	"github.com/Cynosphere/comcord/state"
 	"github.com/bwmarrin/discordgo"
 )
+
+var REGEX_EMOTE = regexp.MustCompile(`<(?:\x{200b}|&)?a?:(\w+):(\d+)>`)
 
 type GuildListing struct {
   Name string
@@ -55,23 +58,89 @@ func ListGuildsCommand(session *discordgo.Session) {
   fmt.Print("\n\r")
 }
 
-func GetSortedChannels(session *discordgo.Session, guildId string) []*discordgo.Channel {
+func GetSortedChannels(session *discordgo.Session, guildId string, withCategories bool) []*discordgo.Channel {
   channels := make([]*discordgo.Channel, 0)
   guild, err := session.State.Guild(guildId)
   if err != nil {
     return channels
   }
 
-  for _, channel := range guild.Channels {
-    if channel.Type != discordgo.ChannelTypeGuildText && channel.Type != discordgo.ChannelTypeGuildNews {
-      continue
-    }
-    channels = append(channels, channel)
-  }
+  if withCategories {
+    categories := make(map[string][]*discordgo.Channel)
 
-  sort.Slice(channels, func(i, j int) bool {
-    return channels[i].Position < channels[j].Position
-  })
+    for _, channel := range guild.Channels {
+      categoryID := "0"
+      if channel.ParentID != "" {
+        categoryID = channel.ParentID
+      }
+
+      _, has := categories[categoryID]
+      if !has {
+        categories[categoryID] = make([]*discordgo.Channel, 0)
+      }
+
+      if channel.Type != discordgo.ChannelTypeGuildText && channel.Type != discordgo.ChannelTypeGuildNews {
+        continue
+      }
+      categories[categoryID] = append(categories[categoryID], channel)
+    }
+
+    for id, channels := range categories {
+      sort.Slice(channels, func(i, j int) bool {
+        return channels[i].Position < channels[j].Position
+      })
+      categoryChannels := make([]*discordgo.Channel, 0)
+      if id != "0" {
+        for _, channel := range guild.Channels {
+          if channel.ID == id {
+            categoryChannels = append(categoryChannels, channel)
+            break
+          }
+        }
+      }
+      for _, channel := range channels {
+        categoryChannels = append(categoryChannels, channel)
+      }
+      categories[id] = categoryChannels
+    }
+
+    keys := make([]string, 0, len(categories) - 1)
+    for id := range categories {
+      if id == "0" {
+        continue
+      }
+      keys = append(keys, id)
+    }
+    sort.Slice(keys, func(i, j int) bool {
+      ca, _ := session.State.Channel(keys[i])
+      cb, _ := session.State.Channel(keys[j])
+
+      return ca.Position < cb.Position
+    })
+    sortedCategories := make(map[string][]*discordgo.Channel)
+    sortedCategories["0"] = categories["0"]
+
+    for _, id := range keys {
+      sortedCategories[id] = categories[id]
+    }
+
+    for _, categoryChannels := range sortedCategories {
+      for _, channel := range categoryChannels {
+        channels = append(channels, channel)
+      }
+    }
+  } else {
+    for _, channel := range guild.Channels {
+      if channel.Type != discordgo.ChannelTypeGuildText && channel.Type != discordgo.ChannelTypeGuildNews {
+        continue
+      }
+      channels = append(channels, channel)
+    }
+
+    sort.Slice(channels, func(i, j int) bool {
+      return channels[i].Position < channels[j].Position
+    })
+  }
 
   return channels
 }
@@ -84,7 +153,7 @@ func ListChannelsCommand(session *discordgo.Session) {
   }
 
   longest := 0
-  channels := GetSortedChannels(session, currentGuild)
+  channels := GetSortedChannels(session, currentGuild, true)
 
   for _, channel := range channels {
     perms, err := session.State.UserChannelPermissions(session.State.User.ID, channel.ID)
@@ -93,12 +162,18 @@ func ListChannelsCommand(session *discordgo.Session) {
     }
 
     private := perms & discordgo.PermissionViewChannel == 0
+    category := channel.Type == discordgo.ChannelTypeGuildCategory
+
+    catLen := 0
+    if category {
+      catLen = 6
+    }
 
     privLen := 0
     if private {
       privLen = 1
     }
-    length := utf8.RuneCountInString(channel.Name) + privLen
+    length := utf8.RuneCountInString(channel.Name) + privLen + catLen
 
     if length > longest {
       longest = int(math.Min(25, float64(length)))
@@ -106,7 +181,7 @@ func ListChannelsCommand(session *discordgo.Session) {
   }
 
   fmt.Print("\n\r")
-  fmt.Printf("  %*s  topic\n\r", longest, "channel-name")
+  fmt.Printf("  %*s    created  topic\n\r", longest, "channel-name")
   fmt.Print(strings.Repeat("-", 80) + "\n\r")
   for _, channel := range channels {
     perms, err := session.State.UserChannelPermissions(session.State.User.ID, channel.ID)
@@ -115,8 +190,13 @@ func ListChannelsCommand(session *discordgo.Session) {
     }
 
     private := perms & discordgo.PermissionViewChannel == 0
-    topic := strings.ReplaceAll(channel.Topic, "\n", " ")
+    category := channel.Type == discordgo.ChannelTypeGuildCategory
+    topic := REGEX_EMOTE.ReplaceAllString(channel.Topic, ":$1:")
+    topic = strings.ReplaceAll(topic, "\n", " ")
     name := channel.Name
+    if category {
+      name = "-- " + name + " --"
+    }
     if private {
       name = "*" + name
     }
@@ -127,12 +207,18 @@ func ListChannelsCommand(session *discordgo.Session) {
     }
 
     topicLength := utf8.RuneCountInString(topic)
-    longestTopic := 80 - (longest + 5)
+    longestTopic := 80 - (longest + 5) - 11
     if topicLength > longestTopic {
       topic = topic[:(longestTopic - 1)] + "\u2026"
     }
 
-    fmt.Printf("  %*s  %s\n\r", longest, name, topic)
+    created := "??-???-??"
+    timestamp, err := discordgo.SnowflakeTimestamp(channel.ID)
+    if err == nil {
+      created = timestamp.Format("02-Jan-06")
+    }
+
+    fmt.Printf("  %*s  %s  %s\n\r", longest, name, created, topic)
   }
   fmt.Print(strings.Repeat("-", 80) + "\n\r")
   fmt.Print("\n\r")
@@ -162,7 +248,7 @@ func SwitchGuild(session *discordgo.Session, input string) {
       state.SetCurrentGuild(target)
       last := state.GetLastChannel(target)
       if last == "" {
-        channels := GetSortedChannels(session, target)
+        channels := GetSortedChannels(session, target, false)
         topChannel := channels[0]
 
         state.SetCurrentChannel(topChannel.ID)
