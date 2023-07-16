@@ -35,10 +35,10 @@ type MessageOptions struct {
   InHistory bool
 }
 
-func FormatMessage(session *discordgo.Session, options MessageOptions) {
-  timestamp := options.Timestamp.Format("[15:04:05]")
+func FormatMessage(session *discordgo.Session, options MessageOptions) []string {
+  lines := make([]string, 0)
 
-  // TODO: history lines
+  timestamp := options.Timestamp.Format("[15:04:05]")
 
   nameLength := utf8.RuneCountInString(options.Name) + 2
   stateNameLength := state.GetNameLength()
@@ -102,12 +102,21 @@ func FormatMessage(session *discordgo.Session, options MessageOptions) {
       replyContent = replyContent[:79 - headerLength] + moreContent
     }
 
-    fmt.Print(replySymbol, name, replyContent, "\n\r")
+    lines = append(lines, replySymbol, name, replyContent, "\n\r")
   }
 
   if options.IsDump {
     if options.InHistory {
-      // TODO
+      headerLength := 80 - (utf8.RuneCountInString(options.Name) + 5)
+      dumpHeader := fmt.Sprintf("--- %s %s\n\r", options.Name, strings.Repeat("-", headerLength))
+
+      contentLines := strings.Split(options.Content, "\n")
+
+      lines = append(lines, dumpHeader)
+      for _, line := range contentLines {
+        lines = append(lines, line + "\n\r")
+      }
+      lines = append(lines, dumpHeader)
     } else {
       wordCount := len(strings.Split(options.Content, " "))
       lineCount := len(strings.Split(options.Content, "\n"))
@@ -127,7 +136,7 @@ func FormatMessage(session *discordgo.Session, options MessageOptions) {
         str = ansi.Color(str, "yellow+b")
       }
 
-      fmt.Print(str + "\n\r")
+      lines = append(lines, str + "\n\r")
     }
   } else {
     // TODO: markdown
@@ -140,7 +149,7 @@ func FormatMessage(session *discordgo.Session, options MessageOptions) {
         name = ansi.Color(name, "red+b")
       }
 
-      fmt.Printf("%s %s\x07\n\r", name, content)
+      lines = append(lines, fmt.Sprintf("%s %s\x07\n\r", name, content))
     } else if utf8.RuneCountInString(content) > 1 &&
     (strings.HasPrefix(content, "*") && strings.HasSuffix(content, "*") && !strings.HasPrefix(content, "**") && !strings.HasSuffix(content, "**")) ||
     (strings.HasPrefix(content, "_") && strings.HasSuffix(content, "_") && !strings.HasPrefix(content, "__") && !strings.HasSuffix(content, "__")) {
@@ -150,15 +159,15 @@ func FormatMessage(session *discordgo.Session, options MessageOptions) {
         str = ansi.Color(str, "green+b")
       }
 
-      fmt.Print(str + "\n\r")
+      lines = append(lines, str + "\n\r")
     } else if options.IsJoin {
       channel, err := session.State.Channel(options.Channel)
       if err != nil {
-        return
+        return lines
       }
       guild, err := session.State.Guild(channel.GuildID)
       if err != nil {
-        return
+        return lines
       }
 
       str := fmt.Sprintf("%s %s has joined %s", timestamp, options.Name, guild.Name)
@@ -166,14 +175,14 @@ func FormatMessage(session *discordgo.Session, options MessageOptions) {
         str = ansi.Color(str, "yellow+b")
       }
 
-      fmt.Print(str + "\n\r")
+      lines = append(lines, str + "\n\r")
     } else if options.IsPin {
       str := fmt.Sprintf("%s %s pinned a message to this channel", timestamp, options.Name)
       if !options.NoColor {
         str = ansi.Color(str, "yellow+b")
       }
 
-      fmt.Print(str + "\n\r")
+      lines = append(lines, str + "\n\r")
     } else {
       nameColor := "cyan+b"
       if options.IsMention {
@@ -194,7 +203,7 @@ func FormatMessage(session *discordgo.Session, options MessageOptions) {
       if options.IsMention {
         str = str + "\x07"
       }
-      fmt.Print(str + "\n\r")
+      lines = append(lines, str + "\n\r")
     }
   }
 
@@ -205,7 +214,7 @@ func FormatMessage(session *discordgo.Session, options MessageOptions) {
         str = ansi.Color(str, "yellow+b")
       }
 
-      fmt.Print(str + "\n\r")
+      lines = append(lines, str + "\n\r")
     }
   }
 
@@ -216,7 +225,7 @@ func FormatMessage(session *discordgo.Session, options MessageOptions) {
         str = ansi.Color(str, "yellow+b")
       }
 
-      fmt.Print(str + "\n\r")
+      lines = append(lines, str + "\n\r")
     }
   }
 
@@ -225,22 +234,25 @@ func FormatMessage(session *discordgo.Session, options MessageOptions) {
   // TODO: embeds
 
   // TODO: lines output for history
+  return lines
 }
 
-func ProcessMessage(session *discordgo.Session, msg *discordgo.Message, options MessageOptions) {
+func ProcessMessage(session *discordgo.Session, msg *discordgo.Message, options MessageOptions) []string {
+  lines := make([]string, 0)
+
   channel, err := session.State.Channel(msg.ChannelID)
   if err != nil {
-    return
+    return lines
   }
 
   guild, err := session.State.Guild(channel.GuildID)
   if err != nil {
-    return
+    return lines
   }
 
   selfMember, err := session.State.Member(guild.ID, session.State.User.ID)
   if err != nil {
-    return
+    return lines
   }
 
   hasMentionedRole := false
@@ -268,72 +280,75 @@ func ProcessMessage(session *discordgo.Session, msg *discordgo.Message, options 
   currentChannel := state.GetCurrentChannel()
   isCurrentChannel := currentChannel == msg.ChannelID
 
-  if !isCurrentChannel && !isDM && !isPing {
-    return
+  if !isCurrentChannel && !isDM && !isPing && !options.InHistory {
+    return lines
   }
 
-  if isPing && !isCurrentChannel && !isDM {
+  if isPing && !isCurrentChannel && !isDM && !options.InHistory {
     str := fmt.Sprintf("**mentioned by %s in #%s in %s**", msg.Author.Username, channel.Name, guild.Name)
-    if options.NoColor {
-      fmt.Print(ansi.Color(str, "red+b"))
-    } else {
-      fmt.Print(str)
+    if !options.NoColor {
+      str = ansi.Color(str, "red+b")
     }
-    fmt.Print("\x07\n\r")
-    return
-  }
+    str = str + "\x07\n\r"
+    lines = append(lines, str)
+  } else {
+    content, _ := msg.ContentWithMoreMentionsReplaced(session)
+    if isEdit {
+      content = content + " (edited)"
+    }
 
-  content, _ := msg.ContentWithMoreMentionsReplaced(session)
-  if isEdit {
-    content = content + " (edited)"
-  }
+    isDump := REGEX_CODEBLOCK.MatchString(content)
 
-  isDump := REGEX_CODEBLOCK.MatchString(content)
+    if strings.Index(content, "\n") > -1 && !isDump {
+      for i, line := range strings.Split(content, "\n") {
+        options.Content = line
+        options.Name = msg.Author.Username
+        options.Channel = msg.ChannelID
+        options.Bot = msg.Author.Bot
+        options.Webhook = msg.WebhookID != ""
+        options.Attachments = msg.Attachments
+        options.Stickers = msg.StickerItems
+        if i == 0 {
+          options.Reply = msg.ReferencedMessage
+        }
+        options.IsMention = isPing
+        options.IsDM = isDM
+        options.IsJoin = msg.Type == discordgo.MessageTypeGuildMemberJoin
+        options.IsPin = msg.Type == discordgo.MessageTypeChannelPinnedMessage
+        options.IsDump = false
 
-  if strings.Index(content, "\n") > -1 && !isDump {
-    for i, line := range strings.Split(content, "\n") {
-      options.Content = line
+        lines = FormatMessage(session, options)
+      }
+    } else {
+      options.Content = content
       options.Name = msg.Author.Username
       options.Channel = msg.ChannelID
       options.Bot = msg.Author.Bot
       options.Webhook = msg.WebhookID != ""
       options.Attachments = msg.Attachments
       options.Stickers = msg.StickerItems
-      if i == 0 {
-        options.Reply = msg.ReferencedMessage
-      }
+      options.Reply = msg.ReferencedMessage
       options.IsMention = isPing
       options.IsDM = isDM
       options.IsJoin = msg.Type == discordgo.MessageTypeGuildMemberJoin
       options.IsPin = msg.Type == discordgo.MessageTypeChannelPinnedMessage
-      options.IsDump = false
+      options.IsDump = isDump
 
-      FormatMessage(session, options)
+      lines = FormatMessage(session, options)
     }
-  } else {
-    options.Content = content
-    options.Name = msg.Author.Username
-    options.Channel = msg.ChannelID
-    options.Bot = msg.Author.Bot
-    options.Webhook = msg.WebhookID != ""
-    options.Attachments = msg.Attachments
-    options.Stickers = msg.StickerItems
-    options.Reply = msg.ReferencedMessage
-    options.IsMention = isPing
-    options.IsDM = isDM
-    options.IsJoin = msg.Type == discordgo.MessageTypeGuildMemberJoin
-    options.IsPin = msg.Type == discordgo.MessageTypeChannelPinnedMessage
-    options.IsDump = isDump
-
-    FormatMessage(session, options)
   }
+
+  return lines
 }
 
 func ProcessQueue(session *discordgo.Session) {
   queue := state.GetMessageQueue()
 
   for _, msg := range queue {
-    ProcessMessage(session, msg, MessageOptions{NoColor: state.HasNoColor()})
+    lines := ProcessMessage(session, msg, MessageOptions{NoColor: state.HasNoColor()})
+    for _, line := range lines {
+      fmt.Print(line)
+    }
   }
 
   state.EmptyMessageQueue()

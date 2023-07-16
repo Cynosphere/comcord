@@ -1,6 +1,8 @@
 package events
 
 import (
+	"fmt"
+
 	"github.com/Cynosphere/comcord/lib"
 	"github.com/Cynosphere/comcord/state"
 	"github.com/bwmarrin/discordgo"
@@ -21,7 +23,10 @@ func MessageCreate(session *discordgo.Session, msg *discordgo.MessageCreate) {
   if state.IsInPrompt() {
     state.AddMessageToQueue(msg.Message)
   } else {
-    lib.ProcessMessage(session, msg.Message, lib.MessageOptions{NoColor: state.HasNoColor()})
+    lines := lib.ProcessMessage(session, msg.Message, lib.MessageOptions{NoColor: state.HasNoColor()})
+    for _, line := range lines {
+      fmt.Print(line)
+    }
   }
 
   if isDM {
@@ -52,7 +57,10 @@ func MessageUpdate(session *discordgo.Session, msg *discordgo.MessageUpdate) {
   if state.IsInPrompt() {
     state.AddMessageToQueue(msg.Message)
   } else {
-    lib.ProcessMessage(session, msg.Message, lib.MessageOptions{NoColor: state.HasNoColor()})
+    lines := lib.ProcessMessage(session, msg.Message, lib.MessageOptions{NoColor: state.HasNoColor()})
+    for _, line := range lines {
+      fmt.Print(line)
+    }
   }
 
   if isDM {

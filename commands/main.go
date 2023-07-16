@@ -56,6 +56,26 @@ func Setup() {
     Run: ListUsersCommand,
     Description: "who is in channel",
   }
+
+  commandMap["r"] = Command{
+    Run: HistoryCommand,
+    Description: "channel history",
+  }
+
+  commandMap["R"] = Command{
+    Run: ExtendedHistoryCommand,
+    Description: "extended history",
+  }
+
+  commandMap["p"] = Command{
+    Run: PeekCommand,
+    Description: "peek at channel",
+  }
+
+  commandMap["P"] = Command{
+    Run: CrossPeekCommand,
+    Description: "cross-guild peek",
+  }
 }
 
 func GetCommand(key string) (Command, bool) {
