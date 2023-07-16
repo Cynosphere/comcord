@@ -38,7 +38,7 @@ func MessageUpdate(session *discordgo.Session, msg *discordgo.MessageUpdate) {
     return
   }
 
-  if msg.Content == msg.BeforeUpdate.Content {
+  if msg.BeforeUpdate != nil && msg.Content == msg.BeforeUpdate.Content {
     return
   }
 
