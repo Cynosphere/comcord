@@ -38,6 +38,10 @@ func MessageUpdate(session *discordgo.Session, msg *discordgo.MessageUpdate) {
     return
   }
 
+  if msg.Content == msg.BeforeUpdate.Content {
+    return
+  }
+
   channel, err := session.State.Channel(msg.ChannelID)
   if err != nil {
     return
