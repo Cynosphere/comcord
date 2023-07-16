@@ -15,19 +15,19 @@ Go is more portable than Node.js
 - [x] Send mode
 - [x] Commands
   - [x] Quit (q)
-  - [ ] Switch guilds (G)
-  - [ ] Switch channels (g)
-  - [ ] List online users in guild (w)
+  - [x] Switch guilds (G)
+  - [x] Switch channels (g)
+  - [x] List online users in guild (w)
   - [x] Emote (e)
     - Just sends message surrounded in `*`'s
   - [ ] Finger (f)
     - Shows presence data if available
     - Creation date, join date, ID, etc
-  - [ ] Room history (r)
-  - [ ] Extended room history (R)
-  - [ ] Peek (p)
-  - [ ] Cross-guild peek (P)
-  - [ ] List channels (l)
+  - [x] Room history (r)
+  - [x] Extended room history (R)
+  - [x] Peek (p)
+  - [x] Cross-guild peek (P)
+  - [x] List channels (l)
   - [x] List guilds (L)
   - [x] Clear (c)
   - [ ] Surf channels forwards (>)
