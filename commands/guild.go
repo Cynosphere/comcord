@@ -11,6 +11,8 @@ import (
 	"github.com/Cynosphere/comcord/lib"
 	"github.com/Cynosphere/comcord/state"
 	"github.com/bwmarrin/discordgo"
+	"github.com/mgutz/ansi"
+  tsize "github.com/kopoli/go-terminal-size"
 )
 
 var REGEX_EMOTE = regexp.MustCompile(`<(?:\x{200b}|&)?a?:(\w+):(\d+)>`)
@@ -58,7 +60,7 @@ func ListGuildsCommand(session *discordgo.Session) {
   fmt.Print("\n\r")
 }
 
-func GetSortedChannels(session *discordgo.Session, guildId string, withCategories bool) []*discordgo.Channel {
+func GetSortedChannels(session *discordgo.Session, guildId string, withCategories bool, withPrivate bool) []*discordgo.Channel {
   channels := make([]*discordgo.Channel, 0)
   guild, err := session.State.Guild(guildId)
   if err != nil {
@@ -69,6 +71,20 @@ func GetSortedChannels(session *discordgo.Session, guildId string, withCategorie
     categories := make(map[string][]*discordgo.Channel)
 
     for _, channel := range guild.Channels {
+      if channel.Type != discordgo.ChannelTypeGuildText && channel.Type != discordgo.ChannelTypeGuildNews {
+        continue
+      }
+
+      perms, err := session.State.UserChannelPermissions(session.State.User.ID, channel.ID)
+      if err != nil {
+        continue
+      }
+
+      private := perms & discordgo.PermissionViewChannel == 0
+      if private && !withPrivate {
+        continue
+      }
+
       categoryID := "0"
       if channel.ParentID != "" {
         categoryID = channel.ParentID
@@ -79,9 +95,6 @@ func GetSortedChannels(session *discordgo.Session, guildId string, withCategorie
         categories[categoryID] = make([]*discordgo.Channel, 0)
       }
 
-      if channel.Type != discordgo.ChannelTypeGuildText && channel.Type != discordgo.ChannelTypeGuildNews {
-        continue
-      }
       categories[categoryID] = append(categories[categoryID], channel)
     }
 
@@ -134,6 +147,17 @@ func GetSortedChannels(session *discordgo.Session, guildId string, withCategorie
       if channel.Type != discordgo.ChannelTypeGuildText && channel.Type != discordgo.ChannelTypeGuildNews {
         continue
       }
+
+      perms, err := session.State.UserChannelPermissions(session.State.User.ID, channel.ID)
+      if err != nil {
+        continue
+      }
+
+      private := perms & discordgo.PermissionViewChannel == 0
+      if private && !withPrivate {
+        continue
+      }
+
       channels = append(channels, channel)
     }
 
@@ -153,7 +177,7 @@ func ListChannelsCommand(session *discordgo.Session) {
   }
 
   longest := 0
-  channels := GetSortedChannels(session, currentGuild, true)
+  channels := GetSortedChannels(session, currentGuild, true, false)
 
   for _, channel := range channels {
     perms, err := session.State.UserChannelPermissions(session.State.User.ID, channel.ID)
@@ -224,8 +248,166 @@ func ListChannelsCommand(session *discordgo.Session) {
   fmt.Print("\n\r")
 }
 
-func ListUsersCommand(session *discordgo.Session) {
+type ListedMember struct {
+  Name string
+  Bot bool
+  Status discordgo.Status
+  Position int
+}
 
+func ListUsersCommand(session *discordgo.Session) {
+  currentGuild := state.GetCurrentGuild()
+  currentChannel := state.GetCurrentChannel()
+
+  if currentGuild == "" {
+    fmt.Print("<not in a guild>\n\r")
+    return
+  }
+  if currentChannel == "" {
+    fmt.Print("<not in a channel>\n\r")
+    return
+  }
+
+  guild, err := session.State.Guild(state.GetCurrentGuild())
+  if err != nil {
+    return
+  }
+  channel, err := session.State.Channel(currentChannel)
+  if err != nil {
+    return
+  }
+
+  fmt.Print("\n\r")
+  fmt.Printf("[you are in '%s' in '#%s' among %d]\n\r", guild.Name, channel.Name, guild.MemberCount)
+  fmt.Print("\n\r")
+
+  longest := 0
+
+  sortedMembers := make([]ListedMember, 0)
+
+  for _, presence := range guild.Presences {
+    if presence.Status == discordgo.StatusOffline {
+      continue
+    }
+    perms, err := session.State.UserChannelPermissions(presence.User.ID, currentChannel)
+    if err != nil {
+      continue
+    }
+    if perms & discordgo.PermissionViewChannel == 0 {
+      continue
+    }
+
+    member, err := session.State.Member(currentGuild, presence.User.ID)
+    if err != nil {
+      continue
+    }
+
+    length := utf8.RuneCountInString(member.User.Username) + 3
+    if length > longest {
+      longest = length
+    }
+
+    position := 0
+    for _, id := range member.Roles {
+      role, err := session.State.Role(currentGuild, id)
+      if err != nil {
+        continue
+      }
+
+      if role.Hoist && role.Position > position {
+        position = role.Position
+      }
+    }
+
+    sortedMembers = append(sortedMembers, ListedMember{
+      Name: member.User.Username,
+      Bot: member.User.Bot,
+      Status: presence.Status,
+      Position: position,
+    })
+  }
+
+  membersByPosition := make(map[int][]ListedMember)
+  for _, member := range sortedMembers {
+    _, has := membersByPosition[member.Position]
+    if !has {
+      membersByPosition[member.Position] = make([]ListedMember, 0)
+    }
+
+    membersByPosition[member.Position] = append(membersByPosition[member.Position], member)
+  }
+  for _, members := range membersByPosition {
+    sort.Slice(members, func(i, j int) bool {
+      return members[i].Name < members[j].Name
+    })
+  }
+
+  positions := make([]int, 0, len(membersByPosition))
+  for k := range membersByPosition {
+    positions = append(positions, k)
+  }
+  sort.Slice(positions, func(i, j int) bool {
+    return positions[i] > positions[j]
+  })
+
+  size, err := tsize.GetSize()
+  if err != nil {
+    return
+  }
+  columns := int(math.Floor(float64(size.Width) / float64(longest)))
+
+  index := 0
+  for _, position := range positions {
+    members := membersByPosition[position]
+    for _, member := range members {
+
+      statusColor := "reset"
+      if member.Status == discordgo.StatusOnline {
+        statusColor = "green+b"
+      } else if member.Status == discordgo.StatusIdle {
+        statusColor = "yellow+b"
+      } else if member.Status == discordgo.StatusDoNotDisturb {
+        statusColor = "red+b"
+      }
+
+      nameColor := "reset"
+      if member.Bot {
+        nameColor = "yellow"
+      }
+
+      nameAndStatus := ansi.Color(" \u2022 ", statusColor) + ansi.Color(member.Name, nameColor)
+      nameLength := utf8.RuneCountInString(member.Name) + 3
+
+      index++
+
+      pad := 0
+      if index % columns != 0 {
+        pad = longest - nameLength
+      }
+      if pad < 0 {
+        pad = 0
+      }
+
+      fmt.Printf(nameAndStatus + strings.Repeat(" ", pad))
+
+      if index % columns == 0 {
+        fmt.Print("\n\r")
+      }
+    }
+  }
+  if index % columns != 0 {
+    fmt.Print("\n\r")
+  }
+  fmt.Print("\n\r")
+
+  if channel.Topic != "" {
+    fmt.Print("--Topic" + strings.Repeat("-", 73) + "\n\r")
+    for _, line := range strings.Split(channel.Topic, "\n") {
+      fmt.Print(line + "\n\r")
+    }
+    fmt.Print(strings.Repeat("-", 80) + "\n\r")
+    fmt.Print("\n\r")
+  }
 }
 
 func SwitchGuild(session *discordgo.Session, input string) {
@@ -248,7 +430,7 @@ func SwitchGuild(session *discordgo.Session, input string) {
       state.SetCurrentGuild(target)
       last := state.GetLastChannel(target)
       if last == "" {
-        channels := GetSortedChannels(session, target, false)
+        channels := GetSortedChannels(session, target, false, false)
         topChannel := channels[0]
 
         state.SetCurrentChannel(topChannel.ID)
@@ -269,5 +451,43 @@ func SwitchGuildsCommand(session *discordgo.Session) {
   lib.MakePrompt(session, ":guild> ", false, func(session *discordgo.Session, input string, interrupt bool) {
     fmt.Print("\r")
     SwitchGuild(session, input)
+  })
+}
+
+func SwitchChannelsCommand(session *discordgo.Session) {
+  currentGuild := state.GetCurrentGuild()
+
+  if currentGuild == "" {
+    fmt.Print("<not in a guild>\n\r")
+    return
+  }
+
+  lib.MakePrompt(session, ":channel> ", false, func(session *discordgo.Session, input string, interrupt bool) {
+    fmt.Print("\r")
+    if input == "" {
+      ListUsersCommand(session)
+    } else {
+      target := ""
+
+      channels := GetSortedChannels(session, currentGuild, false, false)
+
+      for _, channel := range channels {
+        if strings.Index(strings.ToLower(channel.Name), strings.ToLower(input)) > -1 {
+          target = channel.ID
+          break
+        }
+      }
+
+      if target == "" {
+        fmt.Print("<channel not found>\n\r")
+      } else {
+        state.SetCurrentChannel(target)
+        state.SetLastChannel(currentGuild, target)
+
+        ListUsersCommand(session)
+
+        // TODO: update presence
+      }
+    }
   })
 }

@@ -18,6 +18,23 @@ func SendMode(session *discordgo.Session) {
     return
   }
 
+  channel, err := session.State.Channel(channelId)
+  if err != nil {
+    fmt.Print("<error getting channel: ", err.Error(), ">\n\r")
+    return
+  }
+
+  perms, err := session.State.UserChannelPermissions(session.State.User.ID, channel.ID)
+  if err != nil {
+    fmt.Print("<failed to check permissions: ", err.Error(), ">\n\r")
+    return
+  }
+
+  if perms & discordgo.PermissionSendMessages == 0 {
+    fmt.Print("<you do not have permission to send messages here>\n\r")
+    return
+  }
+
   length := utf8.RuneCountInString(session.State.User.Username) + 2
   curLength := state.GetNameLength()
 

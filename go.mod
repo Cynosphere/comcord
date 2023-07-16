@@ -8,6 +8,7 @@ require (
 	github.com/containerd/console v1.0.3 // indirect
 	github.com/ergochat/readline v0.0.5 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
+	github.com/kopoli/go-terminal-size v0.0.0-20170219200355-5c97524c8b54 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect

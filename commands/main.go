@@ -46,6 +46,16 @@ func Setup() {
     Run: SwitchGuildsCommand,
     Description: "goto guild",
   }
+
+  commandMap["g"] = Command{
+    Run: SwitchChannelsCommand,
+    Description: "goto channel",
+  }
+
+  commandMap["w"] = Command{
+    Run: ListUsersCommand,
+    Description: "who is in channel",
+  }
 }
 
 func GetCommand(key string) (Command, bool) {
