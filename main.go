@@ -83,20 +83,18 @@ func main() {
 
   client.Identify.Intents = discordgo.IntentsAll
 
-  if config["useMobile"] == "true" {
-    client.Identify.Properties = discordgo.IdentifyProperties{
-      OS: "Android",
-      Browser: "Discord Android",
-      Device: "Pixel, raven",
-    }
+  client.Identify.Properties = discordgo.IdentifyProperties{
+    OS: runtime.GOOS,
+  }
+  statusType := config["statusType"]
+  if statusType == "mobile" {
+    client.Identify.Properties.Browser = "Discord Android"
+  } else if statusType == "embedded" {
+    client.Identify.Properties.Browser = "Discord Embedded"
+  } else if statusType == "desktop" {
+    client.Identify.Properties.Browser = "Discord Client"
   } else {
-    // TODO: figure out how tempermental X-Super-Properties is, as in if it
-    //       allows arbitrary values or not
-    client.Identify.Properties = discordgo.IdentifyProperties{
-      OS: runtime.GOOS,
-      Browser: "comcord",
-      Device: "comcord",
-    }
+    client.Identify.Properties.Browser = "comcord"
   }
 
   status := "online"

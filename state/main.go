@@ -1,9 +1,9 @@
 package state
 
 import (
-  "time"
+	"time"
 
-  "github.com/bwmarrin/discordgo"
+	"github.com/bwmarrin/discordgo"
 )
 
 type ComcordState struct {
