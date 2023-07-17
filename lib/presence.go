@@ -19,18 +19,18 @@ type ActivityMetadata struct {
 type Activity struct {
   Name          string                 `json:"name"`
 	Type          discordgo.ActivityType `json:"type"`
-	URL           string                 `json:"url,omitempty"`
+	//URL           string                 `json:"url,omitempty"`
 	CreatedAt     time.Time              `json:"created_at"`
 	ApplicationID string                 `json:"application_id,omitempty"`
 	State         string                 `json:"state,omitempty"`
 	Details       string                 `json:"details,omitempty"`
 	Timestamps    discordgo.TimeStamps   `json:"timestamps,omitempty"`
-	Emoji         discordgo.Emoji        `json:"emoji,omitempty"`
-	Party         discordgo.Party        `json:"party,omitempty"`
+	//Emoji         discordgo.Emoji        `json:"emoji,omitempty"`
+	//Party         discordgo.Party        `json:"party,omitempty"`
 	Assets        discordgo.Assets       `json:"assets,omitempty"`
-	Secrets       discordgo.Secrets      `json:"secrets,omitempty"`
-	Instance      bool                   `json:"instance,omitempty"`
-	Flags         int                    `json:"flags,omitempty"`
+	//Secrets       discordgo.Secrets      `json:"secrets,omitempty"`
+	//Instance      bool                   `json:"instance,omitempty"`
+	//Flags         int                    `json:"flags,omitempty"`
   Buttons       []string               `json:"buttons,omitempty"`
   Metadata      ActivityMetadata       `json:"metadata,omitempty"`
 }
@@ -53,6 +53,13 @@ func getUnexportedField(field reflect.Value) interface{} {
 }
 
 func UpdatePresence(session *discordgo.Session) {
+  // there is a way to send presence without reflecting to grab the websocket
+  // connection, but theres an issue with the serialization that because a value
+  // isn't being considered "null" that its trying to apply and failing because
+  // the default doesn't make sense in this context, even if omitempty is set
+  //
+  // this doesnt happen with bot accounts because they have certain fields
+  // stripped
   values := reflect.ValueOf(session)
   fieldWsConn := reflect.Indirect(values).FieldByName("wsConn")
   fieldWsMutex := reflect.Indirect(values).FieldByName("wsMutex")

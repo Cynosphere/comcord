@@ -63,8 +63,15 @@ func main() {
   state.Setup(config)
   commands.Setup()
 
-  // TODO: user account support
-  client, err := discordgo.New("Bot " + token)
+  allowUserAccounts := config["allowUserAccounts"] == "true"
+  tokenPrefix := "Bot "
+  if allowUserAccounts {
+    tokenPrefix = ""
+  }
+
+  fullToken := tokenPrefix + token
+
+  client, err := discordgo.New(fullToken)
   if err != nil {
     fmt.Println("% Failed to create client:", err)
     fmt.Print("\r")
@@ -72,7 +79,8 @@ func main() {
     return
   }
 
-  // TODO: dont set for user accounts(? never really tested if it matters)
+  //client.LogLevel = discordgo.LogDebug
+
   client.Identify.Intents = discordgo.IntentsAll
 
   if config["useMobile"] == "true" {
@@ -82,7 +90,8 @@ func main() {
       Device: "Pixel, raven",
     }
   } else {
-    // TODO: user account support
+    // TODO: figure out how tempermental X-Super-Properties is, as in if it
+    //       allows arbitrary values or not
     client.Identify.Properties = discordgo.IdentifyProperties{
       OS: runtime.GOOS,
       Browser: "comcord",
@@ -96,11 +105,13 @@ func main() {
     status = defaultStatus
   }
   startTime := state.GetStartTime()
+
   client.Identify.Presence = discordgo.GatewayStatusUpdate{
     Since: 0,
     Status: status,
     AFK: false,
     Game: discordgo.Activity{
+      Type: 0,
       Name: "comcord",
       ApplicationID: "1026163285877325874",
       CreatedAt: startTime,
