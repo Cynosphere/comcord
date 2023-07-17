@@ -10,7 +10,7 @@ type ComcordState struct {
   Config map[string]string
   Connected bool
   RPCConnected bool
-  StartTime int64
+  StartTime time.Time
   CurrentGuild string
   CurrentChannel string
   NameLength int
@@ -30,7 +30,7 @@ func Setup(config map[string]string) {
   state.Config = config
   state.Connected = true
   state.RPCConnected = false
-  state.StartTime = time.Now().Unix()
+  state.StartTime = time.Now()
   state.CurrentGuild = ""
   state.CurrentChannel = ""
   state.NameLength = 2
@@ -59,7 +59,7 @@ func SetRPCConnected(value bool) {
   state.RPCConnected = value
 }
 
-func GetStartTime() int64 {
+func GetStartTime() time.Time {
   return state.StartTime
 }
 

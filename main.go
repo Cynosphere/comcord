@@ -90,6 +90,23 @@ func main() {
     }
   }
 
+  status := "online"
+  defaultStatus := config["defaultStatus"]
+  if defaultStatus != "" {
+    status = defaultStatus
+  }
+  startTime := state.GetStartTime()
+  client.Identify.Presence = discordgo.GatewayStatusUpdate{
+    Since: 0,
+    Status: status,
+    AFK: false,
+    Game: discordgo.Activity{
+      Name: "comcord",
+      ApplicationID: "1026163285877325874",
+      CreatedAt: startTime,
+    },
+  }
+
   events.Setup(client)
 
   err = client.Open()

@@ -442,7 +442,7 @@ func SwitchGuild(session *discordgo.Session, input string) {
       ListChannelsCommand(session)
       ListUsersCommand(session)
 
-      // TODO: update presence
+      lib.UpdatePresence(session)
     }
   }
 }
@@ -486,7 +486,7 @@ func SwitchChannelsCommand(session *discordgo.Session) {
 
         ListUsersCommand(session)
 
-        // TODO: update presence
+        lib.UpdatePresence(session)
       }
     }
   })
