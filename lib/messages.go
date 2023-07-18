@@ -317,7 +317,10 @@ func ProcessMessage(session *discordgo.Session, msg *discordgo.Message, options 
         options.IsPin = msg.Type == discordgo.MessageTypeChannelPinnedMessage
         options.IsDump = false
 
-        lines = FormatMessage(session, options)
+        msgLines := FormatMessage(session, options)
+        for _, line := range msgLines {
+          lines = append(lines, line)
+        }
       }
     } else {
       options.Content = content
