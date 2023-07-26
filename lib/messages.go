@@ -38,7 +38,7 @@ type MessageOptions struct {
 func FormatMessage(session *discordgo.Session, options MessageOptions) []string {
   lines := make([]string, 0)
 
-  timestamp := options.Timestamp.Format("[15:04:05]")
+  timestamp := options.Timestamp.UTC().Format("[15:04:05]")
 
   nameLength := utf8.RuneCountInString(options.Name) + 2
   stateNameLength := state.GetNameLength()

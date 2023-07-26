@@ -76,6 +76,11 @@ func Setup() {
     Run: CrossPeekCommand,
     Description: "cross-guild peek",
   }
+
+  commandMap["+"] = Command{
+    Run: TimeCommand,
+    Description: "current time",
+  }
 }
 
 func GetCommand(key string) (Command, bool) {

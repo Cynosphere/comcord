@@ -79,7 +79,8 @@ func main() {
     return
   }
 
-  //client.LogLevel = discordgo.LogDebug
+  //client.LogLevel = -1
+  client.LogLevel = discordgo.LogDebug
 
   client.Identify.Intents = discordgo.IntentsAll
 

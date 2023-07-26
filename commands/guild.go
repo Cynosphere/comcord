@@ -43,6 +43,10 @@ func ListGuildsCommand(session *discordgo.Session) {
       return
     }
 
+    if guild.Name == "" && guildWithCounts.Name != "" {
+      guild.Name = guildWithCounts.Name
+    }
+
     guilds = append(guilds, GuildListing{
       Name: guild.Name,
       Members: guildWithCounts.ApproximateMemberCount,
@@ -66,11 +70,19 @@ func GetSortedChannels(session *discordgo.Session, guildId string, withCategorie
   if err != nil {
     return channels
   }
+  guildChannels := guild.Channels
+  if len(guildChannels) == 0 {
+    c, err := session.GuildChannels(guildId)
+    if err != nil {
+      return channels
+    }
+    guildChannels = c
+  }
 
   if withCategories {
     categories := make(map[string][]*discordgo.Channel)
 
-    for _, channel := range guild.Channels {
+    for _, channel := range guildChannels {
       if channel.Type != discordgo.ChannelTypeGuildText && channel.Type != discordgo.ChannelTypeGuildNews {
         continue
       }
@@ -117,7 +129,7 @@ func GetSortedChannels(session *discordgo.Session, guildId string, withCategorie
       categories[id] = categoryChannels
     }
 
-    keys := make([]string, 0, len(categories) - 1)
+    keys := make([]string, 0)
     for id := range categories {
       if id == "0" {
         continue
@@ -143,7 +155,7 @@ func GetSortedChannels(session *discordgo.Session, guildId string, withCategorie
       }
     }
   } else {
-    for _, channel := range guild.Channels {
+    for _, channel := range guildChannels {
       if channel.Type != discordgo.ChannelTypeGuildText && channel.Type != discordgo.ChannelTypeGuildNews {
         continue
       }
@@ -239,7 +251,7 @@ func ListChannelsCommand(session *discordgo.Session) {
     created := "??-???-??"
     timestamp, err := discordgo.SnowflakeTimestamp(channel.ID)
     if err == nil {
-      created = timestamp.Format("02-Jan-06")
+      created = timestamp.UTC().Format("02-Jan-06")
     }
 
     fmt.Printf("  %*s  %s  %s\n\r", longest, name, created, topic)
@@ -359,6 +371,9 @@ func ListUsersCommand(session *discordgo.Session) {
   index := 0
   for _, position := range positions {
     members := membersByPosition[position]
+    if len(members) > 150 {
+      continue
+    }
     for _, member := range members {
 
       statusColor := "reset"
@@ -431,10 +446,13 @@ func SwitchGuild(session *discordgo.Session, input string) {
       last := state.GetLastChannel(target)
       if last == "" {
         channels := GetSortedChannels(session, target, false, false)
-        topChannel := channels[0]
+        // NB: ????????????????
+        if len(channels) > 0 {
+          topChannel := channels[0]
 
-        state.SetCurrentChannel(topChannel.ID)
-        state.SetLastChannel(target, topChannel.ID)
+          state.SetCurrentChannel(topChannel.ID)
+          state.SetLastChannel(target, topChannel.ID)
+        }
       } else {
         state.SetCurrentChannel(last)
       }
