@@ -52,14 +52,14 @@ func MessageUpdate(msg *gateway.MessageUpdateEvent) {
     return
   }
 
-  old, err := client.MessageStore.Message(msg.ChannelID, msg.ID)
+  /*old, err := client.MessageStore.Message(msg.ChannelID, msg.ID)
   if err != nil {
     return
   }
 
   if msg.Content == old.Content {
     return
-  }
+  }*/
 
   // dont process embed updates as messages
   if !msg.EditedTimestamp.IsValid() {
