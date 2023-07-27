@@ -6,27 +6,41 @@ import (
 
 	"github.com/Cynosphere/comcord/commands"
 	"github.com/Cynosphere/comcord/state"
-	"github.com/bwmarrin/discordgo"
+	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/mgutz/ansi"
 )
 
-func Ready(session *discordgo.Session, event *discordgo.Ready) {
-  fmt.Printf("\rLogged in as: %s\n\r", ansi.Color(fmt.Sprintf("%s (%s)", session.State.User.Username, session.State.User.ID), "yellow"))
+func Ready(event *gateway.ReadyEvent) {
+  client := state.GetClient()
+  self, err := client.Me()
+  if err != nil {
+    fmt.Print("\r% Failed to get self: ", err.Error(), "\n\r")
+    return
+  }
 
-  state.SetNameLength(utf8.RuneCountInString(session.State.User.Username) + 2)
+  fmt.Printf("\rLogged in as: %s\n\r", ansi.Color(fmt.Sprintf("%s (%s)", self.Username, self.ID), "yellow"))
 
-  commands.ListGuildsCommand(session)
+  state.SetNameLength(utf8.RuneCountInString(self.Username) + 2)
+
+  commands.ListGuildsCommand()
 
   defaultGuild := state.GetConfigValue("defaultGuild")
   defaultChannel := state.GetConfigValue("defaultChannel")
   if defaultGuild != "" {
-    guild, err := session.State.Guild(defaultGuild)
+    parsedGuildId, err := discord.ParseSnowflake(defaultGuild)
+    if err != nil {
+      fmt.Print("\r% Failed to parse guild ID: ", err.Error(), "\n\r")
+      return
+    }
+
+    guild, err := client.Guild(discord.GuildID(parsedGuildId))
     if err == nil {
       if defaultChannel != "" {
         state.SetCurrentChannel(defaultChannel)
         state.SetLastChannel(defaultGuild, defaultChannel)
       }
-      commands.SwitchGuild(session, guild.Name)
+      commands.SwitchGuild(guild.Name)
     } else {
       fmt.Println("\r% This account is not in the defined default guild.")
     }

@@ -1,98 +1,57 @@
 package lib
 
 import (
+	"context"
 	"fmt"
-	"reflect"
-	"sync"
-	"time"
-	"unsafe"
 
 	"github.com/Cynosphere/comcord/state"
-	"github.com/bwmarrin/discordgo"
-	"github.com/gorilla/websocket"
+	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/diamondburned/arikawa/v3/gateway"
 )
 
-type ActivityMetadata struct {
-  ButtonURLs []string `json:"button_urls,omitempty"`
-}
+func UpdatePresence() {
+  client := state.GetClient()
 
-type Activity struct {
-  Name          string                 `json:"name"`
-	Type          discordgo.ActivityType `json:"type"`
-	//URL           string                 `json:"url,omitempty"`
-	CreatedAt     time.Time              `json:"created_at"`
-	ApplicationID string                 `json:"application_id,omitempty"`
-	State         string                 `json:"state,omitempty"`
-	Details       string                 `json:"details,omitempty"`
-	Timestamps    discordgo.TimeStamps   `json:"timestamps,omitempty"`
-	//Emoji         discordgo.Emoji        `json:"emoji,omitempty"`
-	//Party         discordgo.Party        `json:"party,omitempty"`
-	Assets        discordgo.Assets       `json:"assets,omitempty"`
-	//Secrets       discordgo.Secrets      `json:"secrets,omitempty"`
-	//Instance      bool                   `json:"instance,omitempty"`
-	//Flags         int                    `json:"flags,omitempty"`
-  Buttons       []string               `json:"buttons,omitempty"`
-  Metadata      ActivityMetadata       `json:"metadata,omitempty"`
-}
-
-type GatewayPresenceUpdate struct {
-  Since      int        `json:"since"`
-  Activities []Activity `json:"activities,omitempty"`
-  Status     string     `json:"status"`
-  AFK        bool       `json:"afk"`
-  Broadcast  string     `json:"broadcast,omitempty"`
-}
-
-type presenceOp struct {
-  Op int                     `json:"op"`
-  Data GatewayPresenceUpdate `json:"d"`
-}
-
-func getUnexportedField(field reflect.Value) interface{} {
-  return reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).Elem().Interface()
-}
-
-func UpdatePresence(session *discordgo.Session) {
-  // there is a way to send presence without reflecting to grab the websocket
-  // connection, but theres an issue with the serialization that because a value
-  // isn't being considered "null" that its trying to apply and failing because
-  // the default doesn't make sense in this context, even if omitempty is set
-  //
-  // this doesnt happen with bot accounts because they have certain fields
-  // stripped
-  values := reflect.ValueOf(session)
-  fieldWsConn := reflect.Indirect(values).FieldByName("wsConn")
-  fieldWsMutex := reflect.Indirect(values).FieldByName("wsMutex")
-
-  wsConn := getUnexportedField(fieldWsConn).(*websocket.Conn)
-  wsMutex := getUnexportedField(fieldWsMutex).(sync.Mutex)
+  self, err := client.MeStore.Me()
+  if err != nil {
+    return
+  }
 
   afk := state.IsAFK()
-  presence := GatewayPresenceUpdate{
+  presence := gateway.UpdatePresenceCommand{
     Since: 0,
-    AFK: afk,
-    Activities: make([]Activity, 0),
+    Activities: make([]discord.Activity, 0),
+    AFK: false,
   }
 
   currentGuild := state.GetCurrentGuild()
   currentChannel := state.GetCurrentChannel()
 
-  var activity Activity
+  parsedGuildId, err := discord.ParseSnowflake(currentGuild)
+  if err != nil {
+    return
+  }
+  parsedChannelId, err := discord.ParseSnowflake(currentChannel)
+  if err != nil {
+    return
+  }
+
+  var activity discord.Activity
 
   startTime := state.GetStartTime()
 
-  if session.State.User.Bot {
-    activity = Activity{
-      Type: 0,
+  if self.Bot {
+    activity = discord.Activity{
+      Type: discord.GameActivity,
       Name: "comcord",
     }
 
     if currentGuild != "" && currentChannel != "" {
-      guild, guildErr := session.State.Guild(currentGuild)
-      channel, channelErr := session.State.Channel(currentChannel)
+      guild, guildErr := client.GuildStore.Guild(discord.GuildID(parsedGuildId))
+      channel, channelErr := client.ChannelStore.Channel(discord.ChannelID(parsedChannelId))
 
       if guildErr == nil && channelErr == nil {
-        activity.Type = 3
+        activity.Type = discord.WatchingActivity
         activity.Name = fmt.Sprintf("#%s in %s | comcord", channel.Name, guild.Name)
       }
     }
@@ -101,33 +60,38 @@ func UpdatePresence(session *discordgo.Session) {
       activity.Name = activity.Name + " [AFK]"
     }
   } else {
-    activity = Activity{
-      Type: 0,
-      ApplicationID: "1026163285877325874",
-      Name: "comcord",
-      Timestamps: discordgo.TimeStamps{
-        StartTimestamp: startTime.Unix(),
-      },
-      Buttons: make([]string, 0),
-      Metadata: ActivityMetadata{
-        ButtonURLs: make([]string, 0),
-      },
+    parsedAppId, err := discord.ParseSnowflake("1026163285877325874")
+    if err != nil {
+      return
     }
 
-    activity.Buttons = append(activity.Buttons, "comcord Repo")
-    activity.Metadata.ButtonURLs = append(activity.Metadata.ButtonURLs, "https://gitdab.com/Cynosphere/comcord")
+    activity = discord.Activity{
+      Type: 0,
+      AppID: discord.AppID(parsedAppId),
+      Name: "comcord",
+      Timestamps: &discord.ActivityTimestamps{
+        Start: discord.UnixMsTimestamp(startTime.Unix()),
+      },
+      /*Buttons: make([]string, 0),
+      Metadata: ActivityMetadata{
+        ButtonURLs: make([]string, 0),
+      },*/
+    }
+
+    //activity.Buttons = append(activity.Buttons, "comcord Repo")
+    //activity.Metadata.ButtonURLs = append(activity.Metadata.ButtonURLs, "https://gitdab.com/Cynosphere/comcord")
 
     if currentGuild != "" && currentChannel != "" {
-      guild, guildErr := session.State.Guild(currentGuild)
-      channel, channelErr := session.State.Channel(currentChannel)
+      guild, guildErr := client.GuildStore.Guild(discord.GuildID(parsedGuildId))
+      channel, channelErr := client.ChannelStore.Channel(discord.ChannelID(parsedChannelId))
 
       if guildErr == nil && channelErr == nil {
         activity.Details = fmt.Sprintf("#%s - %s", channel.Name, guild.Name)
 
-        activity.Assets = discordgo.Assets{}
+        activity.Assets = &discord.ActivityAssets{}
         activity.Assets.LargeText = guild.Name
         if guild.Icon != "" {
-          activity.Assets.LargeImageID = fmt.Sprintf("mp:icons/%s/%s.png?size=1024", guild.ID, guild.Icon)
+          activity.Assets.LargeImage = fmt.Sprintf("mp:icons/%s/%s.png?size=1024", guild.ID, guild.Icon)
         }
       }
     }
@@ -137,23 +101,20 @@ func UpdatePresence(session *discordgo.Session) {
     }
   }
 
-  activity.CreatedAt = startTime
+  activity.CreatedAt = discord.UnixTimestamp(startTime.Unix())
 
   presence.Activities = append(presence.Activities, activity)
 
   defaultStatus := state.GetConfigValue("defaultStatus")
   if defaultStatus != "" {
-    presence.Status = defaultStatus
+    presence.Status = discord.Status(defaultStatus)
   } else {
     if afk {
-      presence.Status = "idle"
+      presence.Status = discord.IdleStatus
     } else {
-      presence.Status = "online"
+      presence.Status = discord.OnlineStatus
     }
   }
 
-  op := presenceOp{3, presence}
-  wsMutex.Lock()
-  wsConn.WriteJSON(op)
-  wsMutex.Unlock()
+  client.Gateway().Send(context.Background(), &presence)
 }

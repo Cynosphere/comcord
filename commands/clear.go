@@ -2,10 +2,8 @@ package commands
 
 import (
 	"fmt"
-
-	"github.com/bwmarrin/discordgo"
 )
 
-func ClearCommand(session *discordgo.Session) {
+func ClearCommand() {
   fmt.Print("\n\r\033[H\033[2J")
 }

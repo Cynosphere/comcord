@@ -4,11 +4,10 @@ import (
 	"strings"
 
 	"github.com/Cynosphere/comcord/state"
-	"github.com/bwmarrin/discordgo"
 	"github.com/ergochat/readline"
 )
 
-func MakePrompt(session *discordgo.Session, prompt string, uniqueLine bool, callback func(session *discordgo.Session, input string, interrupt bool)) {
+func MakePrompt(prompt string, uniqueLine bool, callback func(input string, interrupt bool)) {
   state.SetInPrompt(true)
   state.SetPromptText(prompt)
 
@@ -24,10 +23,10 @@ func MakePrompt(session *discordgo.Session, prompt string, uniqueLine bool, call
 
   interrupt := err == readline.ErrInterrupt
 
-  callback(session, input, interrupt)
+  callback(input, interrupt)
 
   state.SetInPrompt(false)
   state.SetPromptText("")
 
-  ProcessQueue(session)
+  ProcessQueue()
 }

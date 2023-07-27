@@ -1,9 +1,11 @@
 package events
 
-import "github.com/bwmarrin/discordgo"
+import (
+	"github.com/diamondburned/ningen/v3"
+)
 
-func Setup(session *discordgo.Session) {
-  session.AddHandlerOnce(Ready)
-  session.AddHandler(MessageCreate)
-  session.AddHandler(MessageUpdate)
+func Setup(session *ningen.State) {
+  session.PreHandler.AddHandler(Ready)
+  session.PreHandler.AddHandler(MessageCreate)
+  session.PreHandler.AddHandler(MessageUpdate)
 }

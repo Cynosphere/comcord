@@ -1,11 +1,9 @@
 package commands
 
-import "github.com/bwmarrin/discordgo"
-
 var commandMap map[string]Command
 
 type Command struct {
-  Run func(*discordgo.Session)
+  Run func()
   Description string
 }
 

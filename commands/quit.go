@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/bwmarrin/discordgo"
+	"github.com/Cynosphere/comcord/state"
 )
 
-func QuitCommand(session *discordgo.Session) {
+func QuitCommand() {
+  client := state.GetClient()
+
   fmt.Print("Unlinking TTY...\n\r")
-  session.Close()
+  client.Close()
   os.Exit(0)
 }

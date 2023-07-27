@@ -5,10 +5,10 @@ import (
 
 	"github.com/Cynosphere/comcord/lib"
 	"github.com/Cynosphere/comcord/state"
-	"github.com/bwmarrin/discordgo"
+	"github.com/diamondburned/arikawa/v3/discord"
 )
 
-func EmoteCommand(session *discordgo.Session) {
+func EmoteCommand() {
   channelId := state.GetCurrentChannel()
   if channelId == "" {
     fmt.Print("<not in a channel>\n\r")
@@ -16,7 +16,7 @@ func EmoteCommand(session *discordgo.Session) {
   }
 
   prompt := ":emote> "
-  lib.MakePrompt(session, prompt, true, func(session *discordgo.Session, input string, interrupt bool) {
+  lib.MakePrompt(prompt, true, func(input string, interrupt bool) {
     if input == "" {
       if interrupt {
         fmt.Print("^C<no message sent>\n\r")
@@ -25,10 +25,18 @@ func EmoteCommand(session *discordgo.Session) {
       }
     } else {
       fmt.Print(prompt, input, "\n\r")
-      _, err := session.ChannelMessageSend(channelId, "*" + input + "*")
+      client := state.GetClient()
+
+      snowflake, err := discord.ParseSnowflake(channelId)
+      if err != nil {
+        fmt.Print("<failed to parse channel id: ", err.Error(), ">\n\r")
+        return
+      }
+
+      _, err = client.SendMessage(discord.ChannelID(snowflake), "*" + input + "*")
 
       if err != nil {
-        fmt.Print("<failed to send message: ", err, ">\n\r")
+        fmt.Print("<failed to send message: ", err.Error(), ">\n\r")
       }
 
       // TODO: update afk state

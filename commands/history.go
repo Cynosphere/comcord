@@ -8,11 +8,19 @@ import (
 
 	"github.com/Cynosphere/comcord/lib"
 	"github.com/Cynosphere/comcord/state"
-	"github.com/bwmarrin/discordgo"
+	"github.com/diamondburned/arikawa/v3/discord"
 )
 
-func GetHistory(session *discordgo.Session, limit int, channel string) {
-  messages, err := session.ChannelMessages(channel, 100, "", "", "")
+func GetHistory(limit int, channel string) {
+  client := state.GetClient()
+
+  parsedChannelId, err := discord.ParseSnowflake(channel)
+  if err != nil {
+    fmt.Print("<failed to parse channel id: ", err.Error(), ">\n\r")
+    return
+  }
+
+  messages, err := client.Messages(discord.ChannelID(parsedChannelId), 50)
   if err != nil {
     fmt.Print("<failed to get messages: ", err.Error(), ">\n\r")
     return
@@ -26,7 +34,7 @@ func GetHistory(session *discordgo.Session, limit int, channel string) {
 
   lines := make([]string, 0)
   for _, msg := range messages {
-    msgLines := lib.ProcessMessage(session, msg, lib.MessageOptions{NoColor: true, InHistory: true})
+    msgLines := lib.ProcessMessage(msg, lib.MessageOptions{NoColor: true, InHistory: true})
     for _, line := range msgLines {
       lines = append(lines, line)
     }
@@ -41,43 +49,43 @@ func GetHistory(session *discordgo.Session, limit int, channel string) {
   fmt.Print("--Review-Complete", strings.Repeat("-", 63), "\n\r")
 }
 
-func HistoryCommand(session *discordgo.Session) {
+func HistoryCommand() {
   currentChannel := state.GetCurrentChannel()
   if currentChannel == "" {
     fmt.Print("<not in a channel>\n\r")
     return
   }
 
-  GetHistory(session, 20, currentChannel)
+  GetHistory(20, currentChannel)
 }
 
-func ExtendedHistoryCommand(session *discordgo.Session) {
+func ExtendedHistoryCommand() {
   currentChannel := state.GetCurrentChannel()
   if currentChannel == "" {
     fmt.Print("<not in a channel>\n\r")
     return
   }
 
-  lib.MakePrompt(session, ":lines> ", false, func(session *discordgo.Session, input string, interrupt bool) {
+  lib.MakePrompt(":lines> ", false, func(input string, interrupt bool) {
     fmt.Print("\r")
     limit, err := strconv.Atoi(input)
 
     if err != nil {
       fmt.Print("<not a number>\n\r")
     } else {
-      GetHistory(session, limit, currentChannel)
+      GetHistory(limit, currentChannel)
     }
   })
 }
 
-func PeekHistory(session *discordgo.Session, guild, channel string) {
+func PeekHistory(guild, channel string) {
   target := ""
 
-  channels := GetSortedChannels(session, guild, false, false)
+  channels := GetSortedChannels(guild, false, false)
 
   for _, c := range channels {
     if strings.Index(strings.ToLower(c.Name), strings.ToLower(channel)) > -1 {
-      target = c.ID
+      target = c.ID.String()
       break
     }
   }
@@ -85,36 +93,44 @@ func PeekHistory(session *discordgo.Session, guild, channel string) {
   if target == "" {
     fmt.Print("<channel not found>\n\r")
   } else {
-    GetHistory(session, 20, target)
+    GetHistory(20, target)
   }
 }
 
-func PeekCommand(session *discordgo.Session) {
+func PeekCommand() {
   currentGuild := state.GetCurrentGuild()
   if currentGuild == "" {
     fmt.Print("<not in a guild>\n\r")
     return
   }
 
-  lib.MakePrompt(session, ":peek> ", false, func(session *discordgo.Session, input string, interrupt bool) {
+  lib.MakePrompt(":peek> ", false, func(input string, interrupt bool) {
     fmt.Print("\r")
 
     if input != "" {
-      PeekHistory(session, currentGuild, input)
+      PeekHistory(currentGuild, input)
     }
   })
 }
 
-func CrossPeekCommand(session *discordgo.Session) {
-  lib.MakePrompt(session, ":guild> ", false, func(session *discordgo.Session, input string, interrupt bool) {
+func CrossPeekCommand() {
+  client := state.GetClient()
+
+  lib.MakePrompt(":guild> ", false, func(input string, interrupt bool) {
     fmt.Print("\r")
 
     if input != "" {
       targetGuild := ""
 
-      for _, guild := range session.State.Guilds {
+      guilds, err := client.GuildStore.Guilds()
+      if err != nil {
+        fmt.Print("<failed to get guilds: ", err.Error(), ">\n\r")
+        return
+      }
+
+      for _, guild := range guilds {
         if strings.Index(strings.ToLower(guild.Name), strings.ToLower(input)) > -1 {
-          targetGuild = guild.ID
+          targetGuild = guild.ID.String()
           break;
         }
       }
@@ -122,11 +138,11 @@ func CrossPeekCommand(session *discordgo.Session) {
       if targetGuild == "" {
         fmt.Print("<guild not found>\n\r")
       } else {
-        lib.MakePrompt(session, ":peek> ", false, func(session *discordgo.Session, input string, interrupt bool) {
+        lib.MakePrompt(":peek> ", false, func(input string, interrupt bool) {
           fmt.Print("\r")
 
           if input != "" {
-            PeekHistory(session, targetGuild, input)
+            PeekHistory(targetGuild, input)
           }
         })
       }

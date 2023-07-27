@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"runtime"
@@ -12,7 +13,10 @@ import (
 	"github.com/Cynosphere/comcord/events"
 	"github.com/Cynosphere/comcord/rcfile"
 	"github.com/Cynosphere/comcord/state"
-	"github.com/bwmarrin/discordgo"
+	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/diamondburned/arikawa/v3/gateway"
+	"github.com/diamondburned/arikawa/v3/utils/handler"
+	"github.com/diamondburned/ningen/v3"
 	"golang.org/x/term"
 )
 
@@ -60,7 +64,6 @@ func main() {
   fmt.Println("\rType 'h' for Commands")
   fmt.Print("\r")
 
-  state.Setup(config)
   commands.Setup()
 
   allowUserAccounts := config["allowUserAccounts"] == "true"
@@ -71,31 +74,26 @@ func main() {
 
   fullToken := tokenPrefix + token
 
-  client, err := discordgo.New(fullToken)
-  if err != nil {
-    fmt.Println("% Failed to create client:", err)
-    fmt.Print("\r")
-    os.Exit(1)
-    return
-  }
-
-  //client.LogLevel = -1
-  client.LogLevel = discordgo.LogDebug
-
-  client.Identify.Intents = discordgo.IntentsAll
-
-  client.Identify.Properties = discordgo.IdentifyProperties{
+  props := gateway.IdentifyProperties{
     OS: runtime.GOOS,
   }
   statusType := config["statusType"]
   if statusType == "mobile" {
-    client.Identify.Properties.Browser = "Discord Android"
+    props.Browser = "Discord Android"
   } else if statusType == "embedded" {
-    client.Identify.Properties.Browser = "Discord Embedded"
+    props.Browser = "Discord Embedded"
   } else if statusType == "desktop" {
-    client.Identify.Properties.Browser = "Discord Client"
+    props.Browser = "Discord Client"
   } else {
-    client.Identify.Properties.Browser = "comcord"
+    props.Browser = "comcord"
+  }
+
+  ident := gateway.IdentifyCommand{
+    Token: fullToken,
+    Properties: props,
+
+    Compress: true,
+    LargeThreshold: 50,
   }
 
   status := "online"
@@ -105,39 +103,57 @@ func main() {
   }
   startTime := state.GetStartTime()
 
-  client.Identify.Presence = discordgo.GatewayStatusUpdate{
-    Since: 0,
-    Status: status,
-    AFK: false,
-    Game: discordgo.Activity{
-      Type: 0,
-      Name: "comcord",
-      ApplicationID: "1026163285877325874",
-      CreatedAt: startTime,
+  activity := discord.Activity{
+    Name: "comcord",
+    Type: discord.GameActivity,
+    CreatedAt: discord.UnixTimestamp(startTime.Unix()),
+    Timestamps: &discord.ActivityTimestamps{
+      Start: discord.UnixMsTimestamp(startTime.Unix()),
     },
   }
 
+  presence := gateway.UpdatePresenceCommand{
+    Since: 0,
+    Activities: make([]discord.Activity, 0),
+    Status: discord.Status(status),
+    AFK: false,
+  }
+  presence.Activities = append(presence.Activities, activity)
+  ident.Presence = &presence
+
+  client := ningen.NewWithIdentifier(gateway.NewIdentifier(ident))
+  client.PreHandler = handler.New()
+
+  client.AddIntents(gateway.IntentGuilds)
+  client.AddIntents(gateway.IntentGuildPresences)
+  client.AddIntents(gateway.IntentGuildMembers)
+  client.AddIntents(gateway.IntentGuildMessages)
+  client.AddIntents(gateway.IntentDirectMessages)
+  client.AddIntents(gateway.IntentMessageContent)
+
+  state.Setup(config, client)
   events.Setup(client)
 
-  err = client.Open()
+  err = client.Open(context.Background())
   if err != nil {
     fmt.Println("% Failed to connect to Discord:", err)
     fmt.Print("\r")
     os.Exit(1)
     return
   }
+  defer client.Close()
 
   keyboard.Listen(func(key keys.Key) (stop bool, err error) {
     if !state.IsInPrompt() {
       if key.Code == keys.CtrlC {
-        commands.QuitCommand(client)
+        commands.QuitCommand()
         return true, nil
       } else {
         command, has := commands.GetCommand(key.String())
         if has {
-          command.Run(client)
+          command.Run()
         } else {
-          commands.SendMode(client)
+          commands.SendMode()
         }
       }
     }

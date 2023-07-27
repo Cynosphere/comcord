@@ -5,65 +5,84 @@ import (
 
 	"github.com/Cynosphere/comcord/lib"
 	"github.com/Cynosphere/comcord/state"
-	"github.com/bwmarrin/discordgo"
+	"github.com/diamondburned/arikawa/v3/gateway"
+	"github.com/diamondburned/arikawa/v3/discord"
 )
 
-func MessageCreate(session *discordgo.Session, msg *discordgo.MessageCreate) {
-  if msg.Author.ID == session.State.User.ID {
-    return
-  }
-
-  channel, err := session.State.Channel(msg.ChannelID)
+func MessageCreate(msg *gateway.MessageCreateEvent) {
+  client := state.GetClient()
+  self, err := client.MeStore.Me()
   if err != nil {
     return
   }
 
-  isDM := channel.Type == discordgo.ChannelTypeDM || channel.Type == discordgo.ChannelTypeGroupDM
+  if msg.Author.ID == self.ID {
+    return
+  }
+
+  channel, err := client.ChannelStore.Channel(msg.ChannelID)
+  if err != nil {
+    return
+  }
+
+  isDM := channel.Type == discord.DirectMessage || channel.Type == discord.GroupDM
 
   if state.IsInPrompt() {
     state.AddMessageToQueue(msg.Message)
   } else {
-    lines := lib.ProcessMessage(session, msg.Message, lib.MessageOptions{NoColor: state.HasNoColor()})
+    lines := lib.ProcessMessage(msg.Message, lib.MessageOptions{NoColor: state.HasNoColor()})
     for _, line := range lines {
       fmt.Print(line)
     }
   }
 
   if isDM {
-    state.SetLastDM(msg.ChannelID)
+    state.SetLastDM(msg.ChannelID.String())
   }
 }
 
-func MessageUpdate(session *discordgo.Session, msg *discordgo.MessageUpdate) {
-  if msg.Author == nil {
-    return
-  }
-
-  if msg.Author.ID == session.State.User.ID {
-    return
-  }
-
-  if msg.BeforeUpdate != nil && msg.Content == msg.BeforeUpdate.Content {
-    return
-  }
-
-  channel, err := session.State.Channel(msg.ChannelID)
+func MessageUpdate(msg *gateway.MessageUpdateEvent) {
+  client := state.GetClient()
+  self, err := client.MeStore.Me()
   if err != nil {
     return
   }
 
-  isDM := channel.Type == discordgo.ChannelTypeDM || channel.Type == discordgo.ChannelTypeGroupDM
+  if msg.Author.ID == self.ID {
+    return
+  }
+
+  old, err := client.MessageStore.Message(msg.ChannelID, msg.ID)
+  if err != nil {
+    return
+  }
+
+  if msg.Content == old.Content {
+    return
+  }
+
+  // dont process embed updates as messages
+  if !msg.EditedTimestamp.IsValid() {
+    return
+  }
+
+  channel, err := client.ChannelStore.Channel(msg.ChannelID)
+  if err != nil {
+    return
+  }
+
+  isDM := channel.Type == discord.DirectMessage || channel.Type == discord.GroupDM
 
   if state.IsInPrompt() {
     state.AddMessageToQueue(msg.Message)
   } else {
-    lines := lib.ProcessMessage(session, msg.Message, lib.MessageOptions{NoColor: state.HasNoColor()})
+    lines := lib.ProcessMessage(msg.Message, lib.MessageOptions{NoColor: state.HasNoColor()})
     for _, line := range lines {
       fmt.Print(line)
     }
   }
 
   if isDM {
-    state.SetLastDM(msg.ChannelID)
+    state.SetLastDM(msg.ChannelID.String())
   }
 }

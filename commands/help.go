@@ -8,7 +8,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/Cynosphere/comcord/state"
-	"github.com/bwmarrin/discordgo"
 	"github.com/mgutz/ansi"
 )
 
@@ -43,7 +42,7 @@ func lessLower(sa, sb string) bool {
   }
 }
 
-func HelpCommand(session *discordgo.Session) {
+func HelpCommand() {
   noColor := state.HasNoColor()
 
   fmt.Println("\r\nCOMcord (c)left 2023\n\r")

@@ -3,11 +3,14 @@ package state
 import (
 	"time"
 
-	"github.com/bwmarrin/discordgo"
+	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/diamondburned/ningen/v3"
 )
 
 type ComcordState struct {
+  Client *ningen.State
   Config map[string]string
+  Readied bool
   Connected bool
   RPCConnected bool
   StartTime time.Time
@@ -17,7 +20,7 @@ type ComcordState struct {
   InPrompt bool
   PromptText string
   AFK bool
-  MessageQueue []*discordgo.Message
+  MessageQueue []discord.Message
   LastChannel map[string]string
   LastDM string
   NoColor bool
@@ -25,9 +28,11 @@ type ComcordState struct {
 
 var state ComcordState
 
-func Setup(config map[string]string) {
+func Setup(config map[string]string, client *ningen.State) {
   state = ComcordState{}
+  state.Client = client
   state.Config = config
+  state.Readied = false
   state.Connected = true
   state.RPCConnected = false
   state.StartTime = time.Now()
@@ -37,10 +42,22 @@ func Setup(config map[string]string) {
   state.InPrompt = false
   state.PromptText = ""
   state.AFK = false
-  state.MessageQueue = make([]*discordgo.Message, 0)
+  state.MessageQueue = make([]discord.Message, 0)
   state.LastChannel = make(map[string]string)
   state.LastDM = ""
   state.NoColor = false
+}
+
+func GetClient() *ningen.State {
+  return state.Client
+}
+
+func HasReadied() bool {
+  return state.Readied
+}
+
+func SetReadied(value bool) {
+  state.Readied = value
 }
 
 func IsConnected() bool {
@@ -111,16 +128,16 @@ func SetAFK(value bool) {
   state.AFK = value
 }
 
-func GetMessageQueue() []*discordgo.Message {
+func GetMessageQueue() []discord.Message {
   return state.MessageQueue
 }
 
-func AddMessageToQueue(msg *discordgo.Message) {
+func AddMessageToQueue(msg discord.Message) {
   state.MessageQueue = append(state.MessageQueue, msg)
 }
 
 func EmptyMessageQueue() {
-  state.MessageQueue = make([]*discordgo.Message, 0)
+  state.MessageQueue = make([]discord.Message, 0)
 }
 
 func SetLastChannel(guild string, channel string) {
