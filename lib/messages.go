@@ -4,17 +4,33 @@ import (
 	"fmt"
 	"math"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
 
 	"github.com/Cynosphere/comcord/state"
 	"github.com/diamondburned/arikawa/v3/discord"
+	"github.com/mergestat/timediff"
 	"github.com/mgutz/ansi"
 )
 
 var REGEX_CODEBLOCK = regexp.MustCompile(`(?i)\x60\x60\x60(?:([a-z0-9_+\-\.]+?)\n)?\n*([^\n](?:.|\n)*?)\n*\x60\x60\x60`)
+var REGEX_MENTION = regexp.MustCompile(`<@!?(\d+)>`)
+var REGEX_ROLE_MENTION = regexp.MustCompile(`<@&(\d+)>`)
+var REGEX_CHANNEL = regexp.MustCompile(`<#(\d+)>`)
 var REGEX_EMOTE = regexp.MustCompile(`<(?:\x{200b}|&)?a?:(\w+):(\d+)>`)
+var REGEX_COMMAND = regexp.MustCompile(`</([^\s]+?):(\d+)>`)
+var REGEX_BLOCKQUOTE = regexp.MustCompile(`^ *>>?>? +`)
+var REGEX_GREENTEXT = regexp.MustCompile(`^(>.+?)(?:\n|$)`)
+var REGEX_SPOILER = regexp.MustCompile(`\|\|(.+?)\|\|`)
+var REGEX_BOLD = regexp.MustCompile(`\*\*(.+?)\*\*`)
+var REGEX_UNDERLINE = regexp.MustCompile(`__(.+?)__`)
+var REGEX_ITALIC_1 = regexp.MustCompile(`\*(.+?)\*`)
+var REGEX_ITALIC_2 = regexp.MustCompile(`_(.+?)_`)
+var REGEX_STRIKE = regexp.MustCompile(`~~(.+?)~~`)
+var REGEX_3Y3 = regexp.MustCompile(`[\x{e0020}-\x{e007e}]{1,}`)
+var REGEX_TIMESTAMP = regexp.MustCompile(`<t:(-?\d{1,17})(?::(t|T|d|D|f|F|R))?>`)
 
 type MessageOptions struct {
   Content string
@@ -33,6 +49,149 @@ type MessageOptions struct {
   IsDump bool
   NoColor bool
   InHistory bool
+}
+
+func Parse3y3(content string) string {
+  out := []rune{}
+  for i, w := 0, 0; i < len(content); i += w {
+    runeValue, width := utf8.DecodeRuneInString(content[i:])
+    w = width
+
+    out = append(out, rune(int(runeValue) - 0xe0000))
+  }
+
+  return string(out)
+}
+
+func ReplaceStyledMarkdown(content string) string {
+  content = REGEX_BLOCKQUOTE.ReplaceAllString(content, ansi.Color("\u258e", "black+h"))
+  content = REGEX_GREENTEXT.ReplaceAllStringFunc(content, func(match string) string {
+    return ansi.Color(match, "green")
+  })
+
+  if state.GetConfigValue("enable3y3") == "true" {
+    parsed := REGEX_3Y3.FindString(content)
+    parsed = Parse3y3(parsed)
+    parsed = "\033[3m" + parsed + "\033[23m"
+    content = REGEX_3Y3.ReplaceAllString(content, ansi.Color(parsed, "magenta"))
+  }
+
+  content = REGEX_SPOILER.ReplaceAllString(content, "\033[30m\033[40m$1\033[39m\033[49m")
+  content = REGEX_STRIKE.ReplaceAllString(content, "\033[9m$1\033[29m")
+  content = REGEX_BOLD.ReplaceAllString(content, "\033[1m$1\033[22m")
+  content = REGEX_UNDERLINE.ReplaceAllString(content, "\033[4m$1\033[24m")
+  content = REGEX_ITALIC_1.ReplaceAllString(content, "\033[3m$1\033[23m")
+  content = REGEX_ITALIC_2.ReplaceAllString(content, "\033[3m$1\033[23m")
+
+  return content
+}
+
+func replaceAllWithCallback(re regexp.Regexp, content string, callback func(matches []string) string) string {
+  return re.ReplaceAllStringFunc(content, func(match string) string {
+    matches := re.FindStringSubmatch(match)
+    return callback(matches)
+  })
+}
+
+func ReplaceMarkdown(content string, noColor bool) string {
+  client := state.GetClient()
+
+  content = replaceAllWithCallback(*REGEX_MENTION, content, func(matches []string) string {
+    id := matches[1]
+    parsedId, err := discord.ParseSnowflake(id)
+    if err != nil {
+      return "@Unknown User"
+    }
+    user, err := client.User(discord.UserID(parsedId))
+    if err != nil {
+      return "@Unknown User"
+    }
+
+    return "@" + user.Username
+  })
+
+  content = replaceAllWithCallback(*REGEX_ROLE_MENTION, content, func(matches []string) string {
+    id := matches[1]
+    parsedId, err := discord.ParseSnowflake(id)
+    if err != nil {
+      return "[@Unknown Role]"
+    }
+
+    currentGuild := state.GetCurrentGuild()
+    if currentGuild == "" {
+      return "[@Unknown Role]"
+    }
+    parsedGuildId, err := discord.ParseSnowflake(currentGuild)
+    if err != nil {
+      return "[@Unknown Role]"
+    }
+
+    role, err := client.RoleStore.Role(discord.GuildID(parsedGuildId), discord.RoleID(parsedId))
+    if err != nil {
+      return "[@Unknown Role]"
+    }
+
+    return fmt.Sprintf("[@%s]", role.Name)
+  })
+
+  content = replaceAllWithCallback(*REGEX_CHANNEL, content, func(matches []string) string {
+    id := matches[1]
+    parsedId, err := discord.ParseSnowflake(id)
+    if err != nil {
+      return "#Unknown"
+    }
+
+    channel, err := client.ChannelStore.Channel(discord.ChannelID(parsedId))
+    if err != nil {
+      return "#Unknown"
+    }
+
+    return "#" + channel.Name
+  })
+
+  content = REGEX_EMOTE.ReplaceAllString(content, ":$1:")
+  content = REGEX_COMMAND.ReplaceAllString(content, "/$1")
+
+  content = replaceAllWithCallback(*REGEX_TIMESTAMP, content, func (matches []string) string {
+    timestamp, err := strconv.Atoi(matches[1])
+    if err != nil {
+      return "Invalid Date"
+    }
+    timeObj := time.Unix(int64(timestamp), 0).UTC()
+
+    format := matches[2]
+
+    switch format {
+      case "t":
+        return timeObj.Format("15:04")
+      case "T":
+        return timeObj.Format("15:04:05")
+      case "d":
+        return timeObj.Format("2006/01/02")
+      case "D":
+        return timeObj.Format("2 January 2006")
+      case "f":
+        return timeObj.Format("2 January 2006 15:04")
+      case "F":
+        return timeObj.Format("Monday, 2 January 2006 15:04")
+      case "R":
+        return timediff.TimeDiff(timeObj)
+    }
+
+    return "Invalid Date"
+  })
+
+  if !noColor {
+    content = ReplaceStyledMarkdown(content)
+  } else {
+    if state.GetConfigValue("enable3y3") == "true" {
+      parsed := REGEX_3Y3.FindString(content)
+      parsed = Parse3y3(parsed)
+      content = REGEX_3Y3.ReplaceAllString(content, "<3y3:" + parsed + ">")
+    }
+  }
+
+  return content
 }
 
 func FormatMessage(options MessageOptions) []string {
@@ -60,8 +219,7 @@ func FormatMessage(options MessageOptions) []string {
     content := options.Reply.Content
     replyContent := strings.ReplaceAll(content, "\n", " ")
 
-    // TODO: markdown
-    replyContent = REGEX_EMOTE.ReplaceAllString(replyContent, ":$1:")
+    replyContent = ReplaceMarkdown(replyContent, options.NoColor)
 
     attachmentCount := len(options.Reply.Attachments)
     if attachmentCount > 0 {
@@ -141,9 +299,8 @@ func FormatMessage(options MessageOptions) []string {
       lines = append(lines, str + "\n\r")
     }
   } else {
-    // TODO: markdown
     content := options.Content
-    content = REGEX_EMOTE.ReplaceAllString(content, ":$1:")
+    content = ReplaceMarkdown(content, options.NoColor)
 
     if options.IsDM {
       name := fmt.Sprintf("*%s*", options.Name)
