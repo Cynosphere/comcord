@@ -171,6 +171,7 @@ func ReplaceMarkdown(content string, noColor bool) string {
       case "D":
         return timeObj.Format("2 January 2006")
       case "f":
+      default:
         return timeObj.Format("2 January 2006 15:04")
       case "F":
         return timeObj.Format("Monday, 2 January 2006 15:04")
