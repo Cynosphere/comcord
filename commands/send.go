@@ -50,8 +50,12 @@ func SendMode() {
   }
 
   perms := discord.CalcOverwrites(*guild, *channel, *selfMember)
+  cannotSend := !perms.Has(discord.PermissionSendMessages)
+  if perms == 0 {
+    cannotSend = false
+  }
 
-  if !perms.Has(discord.PermissionSendMessages) {
+  if cannotSend {
     fmt.Print("<you do not have permission to send messages here>\n\r")
     return
   }

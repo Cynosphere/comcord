@@ -109,6 +109,9 @@ func GetSortedChannels(guildId string, withCategories bool, withPrivate bool) []
       perms := discord.CalcOverwrites(*guild, channel, *selfMember)
 
       private := !perms.Has(discord.PermissionViewChannel)
+      if perms == 0 {
+        private = false
+      }
       if private && !withPrivate {
         continue
       }
@@ -192,6 +195,9 @@ func GetSortedChannels(guildId string, withCategories bool, withPrivate bool) []
       perms := discord.CalcOverwrites(*guild, channel, *selfMember)
 
       private := !perms.Has(discord.PermissionViewChannel)
+      if perms == 0 {
+        private = false
+      }
       if private && !withPrivate {
         continue
       }
@@ -247,6 +253,10 @@ func ListChannelsCommand() {
     perms := discord.CalcOverwrites(*guild, channel, *selfMember)
 
     private := !perms.Has(discord.PermissionViewChannel)
+    if perms == 0 {
+      private = false
+    }
+    
     category := channel.Type == discord.GuildCategory
 
     catLen := 0
@@ -272,6 +282,9 @@ func ListChannelsCommand() {
     perms := discord.CalcOverwrites(*guild, channel, *selfMember)
 
     private := !perms.Has(discord.PermissionViewChannel)
+    if perms == 0 {
+        private = false
+      }
     category := channel.Type == discord.GuildCategory
     topic := REGEX_EMOTE.ReplaceAllString(channel.Topic, ":$1:")
     topic = strings.ReplaceAll(topic, "\n", " ")
@@ -368,7 +381,11 @@ func ListUsersCommand() {
     }
 
     perms := discord.CalcOverwrites(*guild, *channel, *member)
-    if !perms.Has(discord.PermissionViewChannel) {
+    private := !perms.Has(discord.PermissionViewChannel)
+    if perms == 0 {
+      private = false
+    }
+    if private {
       continue
     }
 
