@@ -35,20 +35,28 @@ Go is more portable than Node.js
   - [ ] AFK toggle (A)
   - [ ] Send DM (s)
   - [ ] Answer DM (a)
+  - [x] Current time (+)
+  - [ ] DM history (TBD)
+  - [ ] Reply to message (TBD)
+  - [ ] Toggle color (z)
 - [x] Message Receiving
   - Markdown styling
     - [x] Emotes
-    - [ ] Timestamp parsing
+    - [x] Timestamp parsing
     - [x] Mentions parsing
-  - [ ] Embeds in the style of commode's posted links
+  - [ ] Embeds
+    - [ ] Plain links with title = commode's posted links
   - [x] Messages wrapped in `*`'s or `_`'s parsed as emotes
   - [x] Inline DMs to replicate commode's private messages
   - [x] Replies
   - [ ] Group DMs
+    - [ ] Only works with user accounts, might not even be worth doing
 - [x] Message sending
   - [x] Puts incoming messages into queue whilst in send mode
+  - [x] Send typing
+  - [ ] Mentioning
 - [x] Configuration
   - [x] Write token from argv into rc file if rc file doesn't exist
   - [x] Default guild/channel
-- [ ] Threads
+- [ ] Threads/Forums
 - [ ] External rich presence when using bot accounts
