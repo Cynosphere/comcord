@@ -68,6 +68,8 @@ func SendMode() {
     prompt = ansi.Color(prompt, "cyan+b")
   }
 
+  client.Typing(channel.ID)
+
   lib.MakePrompt(prompt, true, func(input string, interrupt bool) {
     if input == "" {
       if interrupt {

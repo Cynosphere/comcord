@@ -301,13 +301,14 @@ func FormatMessage(options MessageOptions) []string {
     }
   } else {
     content := options.Content
-    content = ReplaceMarkdown(content, options.NoColor)
 
     if options.IsDM {
       name := fmt.Sprintf("*%s*", options.Name)
       if !options.NoColor {
         name = ansi.Color(name, "red+b")
       }
+
+      content = ReplaceMarkdown(content, options.NoColor)
 
       lines = append(lines, fmt.Sprintf("%s %s\x07\n\r", name, content))
     } else if utf8.RuneCountInString(content) > 1 &&
@@ -352,6 +353,8 @@ func FormatMessage(options MessageOptions) []string {
       } else if options.Bot {
         nameColor = "yellow+b"
       }
+
+      content = ReplaceMarkdown(content, options.NoColor)
 
       name := fmt.Sprintf("[%s]", options.Name)
       if !options.NoColor {

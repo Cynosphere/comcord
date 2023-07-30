@@ -128,7 +128,9 @@ func main() {
   client.AddIntents(gateway.IntentGuildPresences)
   client.AddIntents(gateway.IntentGuildMembers)
   client.AddIntents(gateway.IntentGuildMessages)
+  client.AddIntents(gateway.IntentGuildMessageReactions)
   client.AddIntents(gateway.IntentDirectMessages)
+  client.AddIntents(gateway.IntentDirectMessageReactions)
   client.AddIntents(gateway.IntentMessageContent)
 
   state.Setup(config, client)
