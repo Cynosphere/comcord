@@ -164,7 +164,7 @@ func GetSortedChannels(guildId string, withCategories bool, withPrivate bool) []
     }
     sort.Slice(keys, func(i, j int) bool {
       pa, _ := discord.ParseSnowflake(keys[i])
-      pb, _ := discord.ParseSnowflake(keys[i])
+      pb, _ := discord.ParseSnowflake(keys[j])
 
       ca, _ := client.ChannelStore.Channel(discord.ChannelID(pa))
       cb, _ := client.ChannelStore.Channel(discord.ChannelID(pb))

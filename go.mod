@@ -5,7 +5,6 @@ go 1.20
 require (
 	atomicgo.dev/keyboard v0.2.9 // indirect
 	github.com/containerd/console v1.0.3 // indirect
-	github.com/diamondburned/arikawa v1.3.2 // indirect
 	github.com/diamondburned/arikawa/v3 v3.3.1 // indirect
 	github.com/diamondburned/ningen/v3 v3.0.0 // indirect
 	github.com/ergochat/readline v0.0.5 // indirect
