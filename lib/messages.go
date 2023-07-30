@@ -477,6 +477,7 @@ func ProcessMessage(msg discord.Message, options MessageOptions) []string {
         if i == 0 {
           options.Reply = msg.ReferencedMessage
         }
+        options.Timestamp = time.Time(msg.Timestamp)
         options.IsMention = isPing
         options.IsDM = isDM
         options.IsJoin = msg.Type == discord.GuildMemberJoinMessage
@@ -497,6 +498,7 @@ func ProcessMessage(msg discord.Message, options MessageOptions) []string {
       options.Attachments = msg.Attachments
       options.Stickers = msg.Stickers
       options.Reply = msg.ReferencedMessage
+      options.Timestamp = time.Time(msg.Timestamp)
       options.IsMention = isPing
       options.IsDM = isDM
       options.IsJoin = msg.Type == discord.GuildMemberJoinMessage
