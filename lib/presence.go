@@ -51,13 +51,14 @@ func UpdatePresence() {
       channel, channelErr := client.ChannelStore.Channel(discord.ChannelID(parsedChannelId))
 
       if guildErr == nil && channelErr == nil {
-        activity.Type = discord.WatchingActivity
-        activity.Name = fmt.Sprintf("#%s in %s | comcord", channel.Name, guild.Name)
+        activity.Type = discord.CustomActivity
+        activity.Name = "comcord"
+        activity.State = fmt.Sprintf("#%s - %s | comcord", channel.Name, guild.Name)
       }
     }
 
     if afk {
-      activity.Name = activity.Name + " [AFK]"
+      activity.State = activity.State + " [AFK]"
     }
   } else {
     parsedAppId, err := discord.ParseSnowflake("1026163285877325874")
