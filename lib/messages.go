@@ -102,12 +102,28 @@ func ReplaceMarkdown(content string, noColor bool) string {
     if err != nil {
       return "@Unknown User"
     }
-    user, err := client.User(discord.UserID(parsedId))
-    if err != nil {
-      return "@Unknown User"
-    }
 
-    return "@" + user.Username
+    currentGuild := state.GetCurrentGuild()
+    if currentGuild == "" {
+      user, err := client.User(discord.UserID(parsedId))
+      if err != nil {
+        return "@Unknown User"
+      }
+
+      return "@" + user.Username
+    } else {
+      parsedGuildId, err := discord.ParseSnowflake(currentGuild)
+      if err != nil {
+        return "@Unknown User"
+      }
+
+      member, err := client.MemberStore.Member(discord.GuildID(parsedGuildId), discord.UserID(parsedId))
+      if err != nil {
+        return "@Unknown User"
+      }
+
+      return "@" + member.User.Username
+    }
   })
 
   content = replaceAllWithCallback(*REGEX_ROLE_MENTION, content, func(matches []string) string {

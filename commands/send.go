@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"unicode/utf8"
 
@@ -11,8 +12,12 @@ import (
 	"github.com/mgutz/ansi"
 )
 
+var REGEX_MENTION = regexp.MustCompile("@([a-z0-9._]{1,32})")
+
 func SendMode() {
   client := state.GetClient()
+
+  currentGuild := state.GetCurrentGuild()
 
   channelId := state.GetCurrentChannel()
   if channelId == "" {
@@ -79,6 +84,30 @@ func SendMode() {
       }
     } else {
       fmt.Print(prompt, input, "\n\r")
+
+      input := REGEX_MENTION.ReplaceAllStringFunc(input, func(match string) string {
+        matches := REGEX_MENTION.FindStringSubmatch(match)
+        username := matches[1]
+
+        parsedGuildId, err := discord.ParseSnowflake(currentGuild)
+        if err != nil {
+          return match
+        }
+
+        members, err := client.MemberStore.Members(discord.GuildID(parsedGuildId))
+        if err != nil {
+          return match
+        }
+
+        for _, member := range members {
+          if member.User.Username == username {
+            return member.User.ID.Mention()
+          }
+        }
+
+        return match
+      })
+
       _, err := client.SendMessage(channel.ID, input)
 
       if err != nil {
