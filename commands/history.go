@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 
@@ -20,7 +19,7 @@ func GetHistory(limit int, channel string) {
     return
   }
 
-  messages, err := client.Messages(discord.ChannelID(parsedChannelId), 50)
+  messages, err := client.Messages(discord.ChannelID(parsedChannelId), 100)
   if err != nil {
     fmt.Print("<failed to get messages: ", err.Error(), ">\n\r")
     return
@@ -29,6 +28,8 @@ func GetHistory(limit int, channel string) {
   for i, j := 0, len(messages) - 1; i < j; i, j = i + 1, j - 1 {
     messages[i], messages[j] = messages[j], messages[i]
   }
+
+  state.SetInPrompt(true)
 
   fmt.Print("--Beginning-Review", strings.Repeat("-", 62), "\n\r")
 
@@ -41,12 +42,17 @@ func GetHistory(limit int, channel string) {
   }
 
   length := len(lines)
-  startIndex := int(math.Max(float64(0), float64(length - limit)))
-  for _, line := range lines[startIndex:] {
-    fmt.Print(line)
+  startIndex := length - limit
+  if startIndex < 0 {
+    startIndex = 0
+  }
+  for i := startIndex; i < length; i++ {
+    fmt.Print(lines[i])
   }
 
   fmt.Print("--Review-Complete", strings.Repeat("-", 63), "\n\r")
+
+  state.SetInPrompt(false)
 }
 
 func HistoryCommand() {

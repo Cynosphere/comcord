@@ -495,6 +495,8 @@ func ProcessMessage(msg discord.Message, options MessageOptions) []string {
         options.Stickers = msg.Stickers
         if i == 0 {
           options.Reply = msg.ReferencedMessage
+        } else {
+          options.Reply = nil
         }
         options.Timestamp = time.Time(msg.Timestamp)
         options.IsMention = isPing
