@@ -148,11 +148,15 @@ func main() {
   keyboard.Listen(func(key keys.Key) (stop bool, err error) {
     if !state.IsInPrompt() {
       if key.Code == keys.CtrlC {
+        term.Restore(int(os.Stdin.Fd()), oldState)
         commands.QuitCommand()
         return true, nil
       } else {
         command, has := commands.GetCommand(key.String())
         if has {
+          if key.String() == "q" {
+            term.Restore(int(os.Stdin.Fd()), oldState)
+          }
           command.Run()
         } else {
           commands.SendMode()
