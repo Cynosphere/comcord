@@ -54,10 +54,19 @@ func SendMode() {
     return
   }
 
-  perms := discord.CalcOverwrites(*guild, *channel, *selfMember)
-  cannotSend := !perms.Has(discord.PermissionSendMessages)
-  if perms == 0 {
-    cannotSend = false
+  cannotSend := false
+
+  if channel.ParentID.IsValid() {
+    category, err := client.ChannelStore.Channel(channel.ParentID)
+    if err == nil {
+      perms := lib.ChannelPermissionsOf(*guild, *category, *selfMember)
+      cannotSend = !perms.Has(discord.PermissionSendMessages)
+    }
+  }
+
+  if cannotSend {
+    perms := lib.ChannelPermissionsOf(*guild, *channel, *selfMember)
+    cannotSend = !perms.Has(discord.PermissionSendMessages)
   }
 
   if cannotSend {

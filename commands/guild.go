@@ -5,6 +5,7 @@ import (
 	"math"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -106,12 +107,21 @@ func GetSortedChannels(guildId string, withCategories bool, withPrivate bool) []
         continue
       }
 
-      perms := discord.CalcOverwrites(*guild, channel, *selfMember)
+      private := false
 
-      private := !perms.Has(discord.PermissionViewChannel)
-      if perms == 0 {
-        private = false
+      if channel.ParentID.IsValid() {
+        category, err := client.ChannelStore.Channel(channel.ParentID)
+        if err == nil {
+          perms := lib.ChannelPermissionsOf(*guild, *category, *selfMember)
+          private = !perms.Has(discord.PermissionViewChannel)
+        }
       }
+
+      if private {
+        perms := lib.ChannelPermissionsOf(*guild, channel, *selfMember)
+        private = !perms.Has(discord.PermissionViewChannel)
+      }
+
       if private && !withPrivate {
         continue
       }
@@ -192,12 +202,21 @@ func GetSortedChannels(guildId string, withCategories bool, withPrivate bool) []
         continue
       }
 
-      perms := discord.CalcOverwrites(*guild, channel, *selfMember)
+      private := false
 
-      private := !perms.Has(discord.PermissionViewChannel)
-      if perms == 0 {
-        private = false
+      if channel.ParentID.IsValid() {
+        category, err := client.ChannelStore.Channel(channel.ParentID)
+        if err == nil {
+          perms := lib.ChannelPermissionsOf(*guild, *category, *selfMember)
+          private = !perms.Has(discord.PermissionViewChannel)
+        }
       }
+
+      if private {
+        perms := lib.ChannelPermissionsOf(*guild, channel, *selfMember)
+        private = !perms.Has(discord.PermissionViewChannel)
+      }
+
       if private && !withPrivate {
         continue
       }
@@ -250,13 +269,21 @@ func ListChannelsCommand() {
   channels := GetSortedChannels(currentGuild, true, false)
 
   for _, channel := range channels {
-    perms := discord.CalcOverwrites(*guild, channel, *selfMember)
+    private := false
 
-    private := !perms.Has(discord.PermissionViewChannel)
-    if perms == 0 {
-      private = false
+    if channel.ParentID.IsValid() {
+      category, err := client.ChannelStore.Channel(channel.ParentID)
+      if err == nil {
+        perms := lib.ChannelPermissionsOf(*guild, *category, *selfMember)
+        private = !perms.Has(discord.PermissionViewChannel)
+      }
     }
-    
+
+    if private {
+      perms := lib.ChannelPermissionsOf(*guild, channel, *selfMember)
+      private = !perms.Has(discord.PermissionViewChannel)
+    }
+
     category := channel.Type == discord.GuildCategory
 
     catLen := 0
@@ -279,12 +306,21 @@ func ListChannelsCommand() {
   fmt.Printf("  %*s    created  topic\n\r", longest, "channel-name")
   fmt.Print(strings.Repeat("-", 80) + "\n\r")
   for _, channel := range channels {
-    perms := discord.CalcOverwrites(*guild, channel, *selfMember)
+    private := false
 
-    private := !perms.Has(discord.PermissionViewChannel)
-    if perms == 0 {
-        private = false
+    if channel.ParentID.IsValid() {
+      category, err := client.ChannelStore.Channel(channel.ParentID)
+      if err == nil {
+        perms := lib.ChannelPermissionsOf(*guild, *category, *selfMember)
+        private = !perms.Has(discord.PermissionViewChannel)
       }
+    }
+
+    if private {
+      perms := lib.ChannelPermissionsOf(*guild, channel, *selfMember)
+      private = !perms.Has(discord.PermissionViewChannel)
+    }
+
     category := channel.Type == discord.GuildCategory
     topic := REGEX_EMOTE.ReplaceAllString(channel.Topic, ":$1:")
     topic = strings.ReplaceAll(topic, "\n", " ")
@@ -380,13 +416,19 @@ func ListUsersCommand() {
       continue
     }
 
-    perms := discord.CalcOverwrites(*guild, *channel, *member)
-    private := !perms.Has(discord.PermissionViewChannel)
-    if perms == 0 {
-      private = false
+    private := false
+
+    if channel.ParentID.IsValid() {
+      category, err := client.ChannelStore.Channel(channel.ParentID)
+      if err == nil {
+        perms := lib.ChannelPermissionsOf(*guild, *category, *member)
+        private = !perms.Has(discord.PermissionViewChannel)
+      }
     }
+
     if private {
-      continue
+      perms := lib.ChannelPermissionsOf(*guild, *channel, *member)
+      private = !perms.Has(discord.PermissionViewChannel)
     }
 
     length := utf8.RuneCountInString(member.User.Username) + 3
@@ -451,6 +493,25 @@ func ListUsersCommand() {
   for _, position := range positions {
     members := membersByPosition[position]
     if len(members) > 150 {
+      str := "[hiding " + strconv.Itoa(len(members)) + " members]"
+      length := utf8.RuneCountInString(str)
+
+      index++
+
+      pad := 0
+      if index % columns != 0 {
+        pad = longest - length
+      }
+      if pad < 0 {
+        pad = 0
+      }
+
+      fmt.Printf(str + strings.Repeat(" ", pad))
+
+      if index % columns == 0 {
+        fmt.Print("\n\r")
+      }
+
       continue
     }
     for _, member := range members {
