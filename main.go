@@ -15,6 +15,9 @@ import (
 	"github.com/Cynosphere/comcord/state"
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/gateway"
+	"github.com/diamondburned/arikawa/v3/session"
+	arikawa_state "github.com/diamondburned/arikawa/v3/state"
+	"github.com/diamondburned/arikawa/v3/state/store/defaultstore"
 	"github.com/diamondburned/arikawa/v3/utils/handler"
 	"github.com/diamondburned/ningen/v3"
 	"golang.org/x/term"
@@ -121,7 +124,15 @@ func main() {
   presence.Activities = append(presence.Activities, activity)
   ident.Presence = &presence
 
-  client := ningen.NewWithIdentifier(gateway.NewIdentifier(ident))
+  gwURL, err := gateway.URL(context.Background())
+  if err != nil {
+    fmt.Print("% Failed to get gateway URL: ", err, "\n\r")
+    os.Exit(1)
+  }
+  gw := gateway.NewCustomWithIdentifier(gateway.AddGatewayParams(gwURL), gateway.NewIdentifier(ident), nil)
+  ses := session.NewWithGateway(gw, handler.New())
+  st := arikawa_state.NewFromSession(ses, defaultstore.New())
+  client := ningen.FromState(st)
   client.PreHandler = handler.New()
 
   client.AddIntents(gateway.IntentGuilds)
@@ -138,8 +149,7 @@ func main() {
 
   err = client.Open(context.Background())
   if err != nil {
-    fmt.Println("% Failed to connect to Discord:", err)
-    fmt.Print("\r")
+    fmt.Print("% Failed to connect to Discord: ", err, "\n\r")
     os.Exit(1)
     return
   }
