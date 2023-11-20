@@ -227,7 +227,7 @@ func FormatMessage(options MessageOptions) []string {
 
   if options.Reply != nil {
     nameColor := "cyan+b"
-    if options.Bot {
+    if options.Reply.Author.Bot {
       nameColor = "yellow+b"
     }
 
